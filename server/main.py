@@ -1,13 +1,8 @@
 import socket
 import sys
 
-if len(sys.argv) == 3:
-    # Get "IP address of Server" and also the "port number" from argument 1 and argument 2
-    ip = sys.argv[1]
-    port = int(sys.argv[2])
-else:
-    print("Run like : python3 server.py <arg1:server ip:this system IP 192.168.1.6> <arg2:server port:4444 >")
-    exit(1)
+ip = "127.0.0.1"
+port = 8080
 
 # Create a UDP socket
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

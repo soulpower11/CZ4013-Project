@@ -3,6 +3,8 @@
 */
 #include <stdio.h>
 #include <winsock2.h>
+#include "ultis.h"
+#include <time.h>
 
 #pragma comment(lib, "ws2_32.lib") // Winsock Library
 
@@ -40,31 +42,62 @@ int main(void)
     si_other.sin_port = htons(PORT);
     si_other.sin_addr.S_un.S_addr = inet_addr(SERVER);
 
-    // start communication
-    while (1)
+    Request r1 = {QUERY_FLIGHTID, {.qfi = {.source = "Malaysia", .destination = "Singapore"}}};
+    unsigned char *bytes;
+    int size;
+    marshall(r1, &bytes, &size);
+    printf("The size is %d\n", size);
+    for (int i = 0; i < size; i++)
     {
-        printf("Enter message : ");
-        gets(message);
-
-        // send the message
-        if (sendto(s, message, strlen(message), 0, (struct sockaddr *)&si_other, slen) == SOCKET_ERROR)
-        {
-            printf("sendto() failed with error code : %d", WSAGetLastError());
-            exit(EXIT_FAILURE);
-        }
-
-        // receive a reply and print it
-        // clear the buffer by filling null, it might have previously received data
-        memset(buf, '\0', BUFLEN);
-        // try to receive some data, this is a blocking call
-        if (recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *)&si_other, &slen) == SOCKET_ERROR)
-        {
-            printf("recvfrom() failed with error code : %d", WSAGetLastError());
-            exit(EXIT_FAILURE);
-        }
-
-        puts(buf);
+        printf("%02x ", bytes[i]);
     }
+    printf("\n");
+
+    // send the message
+    if (sendto(s, bytes, size, 0, (struct sockaddr *)&si_other, slen) == SOCKET_ERROR)
+    {
+        printf("sendto() failed with error code : %d", WSAGetLastError());
+        exit(EXIT_FAILURE);
+    }
+    free(bytes);
+
+    // receive a reply and print it
+    // clear the buffer by filling null, it might have previously received data
+    memset(buf, '\0', BUFLEN);
+    // try to receive some data, this is a blocking call
+    if (recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *)&si_other, &slen) == SOCKET_ERROR)
+    {
+        printf("recvfrom() failed with error code : %d", WSAGetLastError());
+        exit(EXIT_FAILURE);
+    }
+
+    puts(buf);
+
+    // // start communication
+    // while (1)
+    // {
+    //     printf("Enter message : ");
+    //     gets(message);
+
+    //     // send the message
+    //     if (sendto(s, message, strlen(message), 0, (struct sockaddr *)&si_other, slen) == SOCKET_ERROR)
+    //     {
+    //         printf("sendto() failed with error code : %d", WSAGetLastError());
+    //         exit(EXIT_FAILURE);
+    //     }
+
+    //     // receive a reply and print it
+    //     // clear the buffer by filling null, it might have previously received data
+    //     memset(buf, '\0', BUFLEN);
+    //     // try to receive some data, this is a blocking call
+    //     if (recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *)&si_other, &slen) == SOCKET_ERROR)
+    //     {
+    //         printf("recvfrom() failed with error code : %d", WSAGetLastError());
+    //         exit(EXIT_FAILURE);
+    //     }
+
+    //     puts(buf);
+    // }
 
     closesocket(s);
     WSACleanup();
