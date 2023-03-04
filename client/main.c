@@ -3,7 +3,7 @@
 */
 #include <stdio.h>
 #include <winsock2.h>
-#include "ultis.h"
+#include "utils.h"
 #include <time.h>
 
 #pragma comment(lib, "ws2_32.lib") // Winsock Library
@@ -19,6 +19,28 @@ int main(void)
     char buf[BUFLEN];
     char message[BUFLEN];
     WSADATA wsa;
+
+    // // Get the local host name
+    // char hostName[256];
+    // if (gethostname(hostName, sizeof(hostName)) != 0)
+    // {
+    //     printf("gethostname failed with error: %d\n", WSAGetLastError());
+    //     return 1;
+    // }
+
+    // // Get the host information
+    // struct hostent *hostInfo;
+    // hostInfo = gethostbyname(hostName);
+    // if (hostInfo == NULL)
+    // {
+    //     printf("gethostbyname failed with error: %d\n", WSAGetLastError());
+    //     return 1;
+    // }
+
+    // // Print the IP address
+    // struct in_addr *ipAddress;
+    // ipAddress = (struct in_addr *)*hostInfo->h_addr_list;
+    // printf("IP address: %s\n", inet_ntoa(*ipAddress));
 
     // Initialise winsock
     printf("\nInitialising Winsock...");
@@ -46,6 +68,7 @@ int main(void)
     unsigned char *bytes;
     int size;
     marshall(r1, &bytes, &size);
+    // addRequestHeader(QUERY_FLIGHTID, REQUEST, 1, &bytes, &size);
     printf("The size is %d\n", size);
     for (int i = 0; i < size; i++)
     {
@@ -59,7 +82,6 @@ int main(void)
         printf("sendto() failed with error code : %d", WSAGetLastError());
         exit(EXIT_FAILURE);
     }
-    free(bytes);
 
     // receive a reply and print it
     // clear the buffer by filling null, it might have previously received data
@@ -72,6 +94,8 @@ int main(void)
     }
 
     puts(buf);
+
+    free(bytes);
 
     // // start communication
     // while (1)

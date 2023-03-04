@@ -1,5 +1,6 @@
 import socket
 import sys
+import utlis
 
 ip = "127.0.0.1"
 port = 8080
@@ -14,7 +15,15 @@ print("Do Ctrl+c to exit the program !!")
 while True:
     print("####### Server is listening #######")
     data, address = s.recvfrom(4096)
-    print("\n\n 2. Server received: ", data.decode('utf-8'), "\n\n")
+    request = utlis.unmarshall(data)
+    print(
+        "\n\n 2. Server received: ", request[0].source, request[0].destination, "\n\n"
+    )
+    # print("\n\n 2. Server received: ", request[1].source,
+    #       request[1].destination, "\n\n")
+    # print("\n\n 2. Server received: ", request.source,
+    #       request.destination, "\n\n")
+    # print("\n\n 2. Server received: ", data.decode('utf-8'), "\n\n")
     send_data = input("Type some text to send => ")
-    s.sendto(send_data.encode('utf-8'), address)
-    print("\n\n 1. Server sent : ", send_data,"\n\n")
+    s.sendto(send_data.encode("utf-8"), address)
+    print("\n\n 1. Server sent : ", send_data, "\n\n")
