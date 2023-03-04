@@ -67,7 +67,7 @@ int main(void)
     Request r1 = {QUERY_FLIGHTID, {.qfi = {.source = "Malaysia", .destination = "Singapore"}}};
     unsigned char *bytes;
     int size;
-    marshall(r1, &bytes, &size);
+    marshal(r1, &bytes, &size);
     // addRequestHeader(QUERY_FLIGHTID, REQUEST, 1, &bytes, &size);
     printf("The size is %d\n", size);
     for (int i = 0; i < size; i++)

@@ -178,7 +178,7 @@ def setField(dataClass, index, value, serviceType, messageType):
 # 5 Bytes Variable Header
 
 
-def unmarshall(bytesStr):
+def unmarshal(bytesStr):
     requestHeader = bytesStr[:7]
 
     byteOrdering = "big" if requestHeader[2:3] == ByteOrdering.BIG_ENDIAN else "little"

@@ -237,7 +237,7 @@ void addVariableHeader(int dataType, int length, unsigned char **bytes, int *siz
     *size += 5;
 }
 
-void marshall(Request r, unsigned char **bytes, int *size)
+void marshal(Request r, unsigned char **bytes, int *size)
 {
     switch (r.type)
     {

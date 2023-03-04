@@ -15,7 +15,7 @@ print("Do Ctrl+c to exit the program !!")
 while True:
     print("####### Server is listening #######")
     data, address = s.recvfrom(4096)
-    request = utlis.unmarshall(data)
+    request = utlis.unmarshal(data)
     print(
         "\n\n 2. Server received: ", request[0].source, request[0].destination, "\n\n"
     )
