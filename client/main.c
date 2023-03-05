@@ -64,7 +64,7 @@ int main(void)
     si_other.sin_port = htons(PORT);
     si_other.sin_addr.S_un.S_addr = inet_addr(SERVER);
 
-    Request r1 = {QUERY_FLIGHTID, {.qfi = {.source = "Malaysia", .destination = "Singapore"}}};
+    Request r1 = {QUERY_FLIGHTID, REQUEST, {.qfi = &(QueryFlightIdRequest){.source = "Malaysia", .destination = "Singapore"}}};
     unsigned char *bytes;
     int size;
     marshal(r1, &bytes, &size);
@@ -94,6 +94,9 @@ int main(void)
     }
 
     puts(buf);
+
+    Request r2 = unmarshal(buf);
+    printf("The First Flight is: %d, The Second Flight is: %d, The Third Flight is: %d\n", r2.value.qfir.flightIds[0], r2.value.qfir.flightIds[1], r2.value.qfir.flightIds[2]);
 
     free(bytes);
 
