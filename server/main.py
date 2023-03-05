@@ -1,5 +1,6 @@
 import socket
 import sys
+import time
 import utlis
 
 ip = "127.0.0.1"
@@ -15,7 +16,9 @@ print("Do Ctrl+c to exit the program !!")
 while True:
     print("####### Server is listening #######")
     data, address = s.recvfrom(4096)
-    request = utlis.unmarshal(data)
+    requestId = data[:20]
+    print(requestId)
+    request = utlis.unmarshal(data[20:])
     print(
         "\n\n 2. Server received: ", request[0].source, request[0].destination, "\n\n"
     )
@@ -27,14 +30,21 @@ while True:
     #     0,
     # )
     bytes, size = utlis.marshal(
-        utlis.QueryFlightIdResponse([102, 222, 555], ""),
+        utlis.QueryFlightIdResponse([102, 222, 555], "error!!!"),
         utlis.ServiceType.QUERY_FLIGHTID,
         utlis.MessageType.REPLY,
-        0,
+        1,
     )
+
+    replyBytes = bytearray()
+    replyBytes.extend(requestId)
+    replyBytes.extend(bytes)
+    print(len(replyBytes))
+
     print("The size is ", size)
     print(bytes)
-    s.sendto(bytes, address)
+    s.sendto(replyBytes, address)
+    break
 
     # print("\n\n 2. Server received: ", request[1].source,
     #       request[1].destination, "\n\n")

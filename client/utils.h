@@ -118,6 +118,7 @@ typedef struct Request
     ServiceType sType;
     MessageType mType;
     RequestValue value;
+    int length;
 } Request;
 
 unsigned char *slice(unsigned char *arr, int start, int end)
@@ -274,9 +275,26 @@ unsigned char byteOrderingToByte(int num)
 //     return (int)byte;
 // }
 
-// IP+Time
-void addRequestID(char *ip, unsigned char **bytes, int *size)
+// IP+Time 19 Bytes
+void addRequestID(char *ip, time_t time, unsigned char **bytes, int *size)
 {
+    unsigned char *resultBytes;
+    unsigned char *ipBytes;
+    unsigned char *timeBytes;
+    int ipSize;
+    int timeSize;
+
+    stringToBytes(ip, &ipBytes, &ipSize);
+    timeToBytes(time, &timeBytes, &timeSize);
+
+    resultBytes = (unsigned char *)malloc(20 + *size);
+
+    memcpy(resultBytes, ipBytes, ipSize);
+    memcpy(resultBytes + 12, timeBytes, timeSize);
+    memcpy(resultBytes + 12 + timeSize, *bytes, *size);
+
+    *bytes = resultBytes;
+    *size += 20;
 }
 
 // Service Type 1 Byte
@@ -404,7 +422,7 @@ Request unmarshal(unsigned char *bytes)
             }
         }
 
-        return (Request){serviceType, messageType, .value.qfi = queryRequest};
+        return (Request){serviceType, messageType, .value.qfi = queryRequest, noOfElement};
     }
     else if (serviceType == QUERY_FLIGHTID && messageType == REPLY)
     {
@@ -433,8 +451,29 @@ Request unmarshal(unsigned char *bytes)
                 variablesByte += 5 + lengthOfVariable;
             }
         }
+        else
+        {
+            int lengthOfElement = bytesToInt(slice(elementsByte, 0, 4), byteOrdering);
+            unsigned char *variablesByte = elementsByte + 4;
+            elementsByte += 4 + lengthOfElement;
 
-        return (Request){serviceType, messageType, .value.qfir = queryResponse};
+            unsigned char variableHeader[5];
+            memcpy(variableHeader, variablesByte, 5);
+
+            int dataType = byteToInt(variableHeader[0]);
+            int lengthOfVariable = bytesToInt(slice(variableHeader, 1, 5), byteOrdering);
+
+            unsigned char *variableByte;
+            variableByte = (unsigned char *)malloc(lengthOfVariable);
+            memcpy(variableByte, variablesByte + 5, lengthOfVariable);
+
+            queryResponse.error = bytesToString(variableByte, lengthOfVariable);
+
+            variablesByte += 5 + lengthOfVariable;
+            lengthOfElement -= (5 + lengthOfVariable);
+        }
+
+        return (Request){serviceType, messageType, .value.qfir = queryResponse, noOfElement};
     }
 }
 

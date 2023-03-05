@@ -182,7 +182,7 @@ def toVariable(bytes, dataType, byteOrder):
     elif dataType == DataType.STRING_TYPE:
         return bytesToString(bytes)
     elif dataType == DataType.TIME_TYPE:
-        return bytesToTime(bytes)
+        return bytesToTime(bytes, byteOrder)
 
 
 def byteOrderingToByte(num):
@@ -324,20 +324,51 @@ def marshal(r, serviceType, messageType, errorCode):
         length = len(r.flightIds)
         resultSize = 0
         resultBytes = bytearray()
-        for flightId in r.flightIds:
-            flightIdBytes, flightIdSize = intToBytes(flightId)
-            flightIdBytes, flightIdSize = addVariableHeader(
-                DataType.INT_TYPE, flightIdSize, flightIdBytes, flightIdSize
-            )
-            flightIdBytes, flightIdSize = addElementHeader(
-                flightIdSize, flightIdBytes, flightIdSize
-            )
 
-            resultSize += flightIdSize
-            resultBytes.extend(flightIdBytes)
+        if errorCode == 0:
+            for flightId in r.flightIds:
+                flightIdBytes, flightIdSize = intToBytes(flightId)
+                flightIdBytes, flightIdSize = addVariableHeader(
+                    DataType.INT_TYPE, flightIdSize, flightIdBytes, flightIdSize
+                )
+                flightIdBytes, flightIdSize = addElementHeader(
+                    flightIdSize, flightIdBytes, flightIdSize
+                )
+
+                resultSize += flightIdSize
+                resultBytes.extend(flightIdBytes)
+        else:
+            errorBytes, errorSize = stringToBytes(r.error)
+            errorBytes, errorSize = addVariableHeader(
+                DataType.STRING_TYPE, errorSize, errorBytes, errorSize
+            )
+            errorBytes, errorSize = addElementHeader(errorSize, errorBytes, errorSize)
+
+            resultSize += errorSize
+            resultBytes.extend(errorBytes)
 
         bytes, size = addRequestHeader(
             serviceType, messageType, errorCode, length, resultBytes, resultSize
+        )
+
+        return bytes, size
+    elif (
+        serviceType == ServiceType.QUERY_DEPARTURETIME
+        and messageType == MessageType.REQUEST
+    ):
+        flightIdBytes, flightIdSize = intToBytes(r.flightId)
+        flightIdBytes, flightIdSize = addVariableHeader(
+            DataType.INT_TYPE, flightIdSize, flightIdBytes, flightIdSize
+        )
+
+        resultSize = flightIdSize
+        resultBytes = bytearray(resultSize)
+
+        resultBytes[0:flightIdSize] = flightIdBytes
+        resultBytes, resultSize = addElementHeader(resultSize, resultBytes, resultSize)
+
+        bytes, size = addRequestHeader(
+            serviceType, messageType, errorCode, 1, resultBytes, resultSize
         )
 
         return bytes, size

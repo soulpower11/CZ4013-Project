@@ -20,28 +20,6 @@ int main(void)
     char message[BUFLEN];
     WSADATA wsa;
 
-    // // Get the local host name
-    // char hostName[256];
-    // if (gethostname(hostName, sizeof(hostName)) != 0)
-    // {
-    //     printf("gethostname failed with error: %d\n", WSAGetLastError());
-    //     return 1;
-    // }
-
-    // // Get the host information
-    // struct hostent *hostInfo;
-    // hostInfo = gethostbyname(hostName);
-    // if (hostInfo == NULL)
-    // {
-    //     printf("gethostbyname failed with error: %d\n", WSAGetLastError());
-    //     return 1;
-    // }
-
-    // // Print the IP address
-    // struct in_addr *ipAddress;
-    // ipAddress = (struct in_addr *)*hostInfo->h_addr_list;
-    // printf("IP address: %s\n", inet_ntoa(*ipAddress));
-
     // Initialise winsock
     printf("\nInitialising Winsock...");
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
@@ -68,6 +46,32 @@ int main(void)
     unsigned char *bytes;
     int size;
     marshal(r1, &bytes, &size);
+
+    // Get the local host name
+    char hostName[256];
+    if (gethostname(hostName, sizeof(hostName)) != 0)
+    {
+        printf("gethostname failed with error: %d\n", WSAGetLastError());
+        return 1;
+    }
+
+    // Get the host information
+    struct hostent *hostInfo;
+    hostInfo = gethostbyname(hostName);
+    if (hostInfo == NULL)
+    {
+        printf("gethostbyname failed with error: %d\n", WSAGetLastError());
+        return 1;
+    }
+
+    // Print the IP address
+    struct in_addr *ipAddress;
+    ipAddress = (struct in_addr *)*hostInfo->h_addr_list;
+    char *ip = inet_ntoa(*ipAddress);
+    time_t curTime = time(0);
+
+    addRequestID(ip, curTime, &bytes, &size);
+
     // addRequestHeader(QUERY_FLIGHTID, REQUEST, 1, &bytes, &size);
     printf("The size is %d\n", size);
     for (int i = 0; i < size; i++)
@@ -95,8 +99,13 @@ int main(void)
 
     puts(buf);
 
-    Request r2 = unmarshal(buf);
-    printf("The First Flight is: %d, The Second Flight is: %d, The Third Flight is: %d\n", r2.value.qfir.flightIds[0], r2.value.qfir.flightIds[1], r2.value.qfir.flightIds[2]);
+    Request r2 = unmarshal(buf + 20);
+    printf("The error is: %s\n", r2.value.qfir.error);
+    // size_t len = r2.length;
+    // for (int i = 0; i < len; i++)
+    // {
+    //     printf("The Flight ID is: %d\n", r2.value.qfir.flightIds[i]);
+    // }
 
     free(bytes);
 
