@@ -1,125 +1,6 @@
 #include <stdio.h>
 #include <time.h>
-
-typedef enum DataType
-{
-    INT_TYPE,
-    FLOAT_TYPE,
-    STRING_TYPE,
-    TIME_TYPE,
-} DataType;
-
-typedef enum ServiceType
-{
-    QUERY_FLIGHTID,
-    QUERY_DEPARTURETIME,
-    RESERVATION,
-    MONITOR,
-    CHECK_ARRIVALTIME,
-    CANCALLATION,
-} ServiceType;
-
-typedef enum MessageType
-{
-    REQUEST,
-    REPLY,
-} MessageType;
-
-typedef enum ByteOrdering
-{
-    BIG_ENDIAN,
-    LITTLE_ENDIAN,
-} ByteOrdering;
-
-typedef struct QueryFlightIdRequest
-{
-    char *source;
-    char *destination;
-} QueryFlightIdRequest;
-
-typedef struct QueryFlightIdResponse
-{
-    int *flightIds;
-    char *error;
-} QueryFlightIdResponse;
-
-typedef struct QueryDepartureTimeRequest
-{
-    int flightId;
-} QueryDepartureTimeRequest;
-
-typedef struct QueryDepartureTimeResponse
-{
-    time_t departureTime;
-    float airFare;
-    int seatAvailability;
-    char *error;
-} QueryDepartureTimeResponse;
-
-typedef struct ReservationRequest
-{
-    int flightId;
-    int noOfSeats;
-} ReservationRequest;
-
-typedef struct ReservationResponse
-{
-    char *msg;
-    char *error;
-} ReservationResponse;
-
-typedef struct MonitorRequest
-{
-    int flightId;
-    int monitorInterval;
-} MonitorRequest;
-
-typedef struct MonitorResponse
-{
-    char *msg;
-    char *error;
-} MonitorResponse;
-
-typedef struct CheckArrivalTimeRequest
-{
-    int flightId;
-} CheckArrivalTimeRequest;
-
-typedef struct CheckArrivalTimeResponse
-{
-    time_t arrivalTime;
-    char *error;
-} CheckArrivalTimeResponse;
-
-typedef struct CancellationRequest
-{
-    int flightId;
-} CancellationRequest;
-
-typedef struct CancellationResponse
-{
-    char *msg;
-    char *error;
-} CancellationResponse;
-
-typedef union RequestValue
-{
-    struct QueryFlightIdRequest *qfi;
-    struct QueryFlightIdResponse qfir;
-    struct QueryDepartureTimeRequest *qdt;
-    struct ReservationRequest *r;
-    struct MonitorRequest *m;
-    struct CheckArrivalTimeRequest *cat;
-    struct CancellationRequest *c;
-} RequestValue;
-
-typedef struct Request
-{
-    ServiceType sType;
-    MessageType mType;
-    RequestValue value;
-    int length;
-} Request;
+#include "serviceType.h"
 
 unsigned char *slice(unsigned char *arr, int start, int end)
 {
@@ -270,11 +151,6 @@ unsigned char byteOrderingToByte(int num)
     return byte;
 }
 
-// int byteOrderingFromByte(unsigned char byte)
-// {
-//     return (int)byte;
-// }
-
 // IP+Time 19 Bytes
 void addRequestID(char *ip, time_t time, unsigned char **bytes, int *size)
 {
@@ -371,7 +247,7 @@ void addVariableHeader(int dataType, int length, unsigned char **bytes, int *siz
     *size += 5;
 }
 
-Request unmarshal(unsigned char *bytes)
+Message unmarshal(unsigned char *bytes)
 {
     unsigned char requestHeader[8];
     memcpy(requestHeader, bytes, 8);
@@ -422,33 +298,42 @@ Request unmarshal(unsigned char *bytes)
             }
         }
 
-        return (Request){serviceType, messageType, .value.qfi = queryRequest, noOfElement};
+        return (Message){serviceType, messageType, .value.qfi = queryRequest, noOfElement};
     }
     else if (serviceType == QUERY_FLIGHTID && messageType == REPLY)
     {
-        QueryFlightIdResponse queryResponse;
+        QueryFlightIdResponse *queryResponse;
+        queryResponse = (QueryFlightIdResponse *)malloc(noOfElement);
         if (errorCode == 0)
         {
-            queryResponse.flightIds = (int *)malloc(noOfElement);
             for (int i = 0; i < noOfElement; i++)
             {
                 int lengthOfElement = bytesToInt(slice(elementsByte, 0, 4), byteOrdering);
                 unsigned char *variablesByte = elementsByte + 4;
                 elementsByte += 4 + lengthOfElement;
 
-                unsigned char variableHeader[5];
-                memcpy(variableHeader, variablesByte, 5);
+                int index = 0;
+                while (lengthOfElement != 0)
+                {
+                    unsigned char variableHeader[5];
+                    memcpy(variableHeader, variablesByte, 5);
 
-                int dataType = byteToInt(variableHeader[0]);
-                int lengthOfVariable = bytesToInt(slice(variableHeader, 1, 5), byteOrdering);
+                    int dataType = byteToInt(variableHeader[0]);
+                    int lengthOfVariable = bytesToInt(slice(variableHeader, 1, 5), byteOrdering);
 
-                unsigned char *variableByte;
-                variableByte = (unsigned char *)malloc(lengthOfVariable);
-                memcpy(variableByte, variablesByte + 5, lengthOfVariable);
+                    unsigned char *variableByte;
+                    variableByte = (unsigned char *)malloc(lengthOfVariable);
+                    memcpy(variableByte, variablesByte + 5, lengthOfVariable);
 
-                queryResponse.flightIds[i] = bytesToInt(variableByte, byteOrdering);
+                    if (index == 0)
+                    {
+                        queryResponse[i].flightId = bytesToInt(variableByte, byteOrdering);
+                    }
 
-                variablesByte += 5 + lengthOfVariable;
+                    variablesByte += 5 + lengthOfVariable;
+                    lengthOfElement -= (5 + lengthOfVariable);
+                    index++;
+                }
             }
         }
         else
@@ -467,17 +352,16 @@ Request unmarshal(unsigned char *bytes)
             variableByte = (unsigned char *)malloc(lengthOfVariable);
             memcpy(variableByte, variablesByte + 5, lengthOfVariable);
 
-            queryResponse.error = bytesToString(variableByte, lengthOfVariable);
-
-            variablesByte += 5 + lengthOfVariable;
-            lengthOfElement -= (5 + lengthOfVariable);
+            char *error = bytesToString(variableByte, lengthOfVariable);
+            Response r = {.error = error};
+            return (Message){serviceType, messageType, .value.res = r, 1};
         }
-
-        return (Request){serviceType, messageType, .value.qfir = queryResponse, noOfElement};
+        Response r = {.value = queryResponse};
+        return (Message){serviceType, messageType, .value.res = r, noOfElement};
     }
 }
 
-void marshal(Request r, unsigned char **bytes, int *size)
+void marshal(Message r, unsigned char **bytes, int *size)
 {
 
     if (r.sType == QUERY_FLIGHTID && r.mType == REQUEST)
@@ -513,5 +397,33 @@ void marshal(Request r, unsigned char **bytes, int *size)
     }
     else if (r.sType == QUERY_FLIGHTID && r.mType == REPLY)
     {
+        unsigned char *resultBytes;
+        int resultSize;
+        unsigned char *sourceBytes;
+        int sourceSize;
+        unsigned char *destinationBytes;
+        int destinationSize;
+
+        stringToBytes(r.value.qfi[0].source, &sourceBytes, &sourceSize);
+        addVariableHeader(STRING_TYPE, sourceSize, &sourceBytes, &sourceSize);
+
+        stringToBytes(r.value.qfi[0].destination, &destinationBytes, &destinationSize);
+        addVariableHeader(STRING_TYPE, destinationSize, &destinationBytes, &destinationSize);
+
+        resultSize = sourceSize + destinationSize;
+        resultBytes = (unsigned char *)malloc(resultSize);
+
+        memcpy(resultBytes, sourceBytes, sourceSize);
+        memcpy(resultBytes + sourceSize, destinationBytes, destinationSize);
+        addElementHeader(resultSize, &resultBytes, &resultSize);
+
+        *size = resultSize;
+        *bytes = (unsigned char *)malloc(*size);
+
+        memcpy(*bytes, resultBytes, resultSize);
+        addRequestHeader(QUERY_FLIGHTID, REQUEST, 0, 1, bytes, size);
+
+        free(sourceBytes);
+        free(destinationBytes);
     }
 }

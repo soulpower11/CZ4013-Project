@@ -42,7 +42,7 @@ int main(void)
     si_other.sin_port = htons(PORT);
     si_other.sin_addr.S_un.S_addr = inet_addr(SERVER);
 
-    Request r1 = {QUERY_FLIGHTID, REQUEST, {.qfi = &(QueryFlightIdRequest){.source = "Malaysia", .destination = "Singapore"}}};
+    Message r1 = {QUERY_FLIGHTID, REQUEST, {.qfi = &(QueryFlightIdRequest){.source = "Malaysia", .destination = "Singapore"}}};
     unsigned char *bytes;
     int size;
     marshal(r1, &bytes, &size);
@@ -99,13 +99,13 @@ int main(void)
 
     puts(buf);
 
-    Request r2 = unmarshal(buf + 20);
-    printf("The error is: %s\n", r2.value.qfir.error);
-    // size_t len = r2.length;
-    // for (int i = 0; i < len; i++)
-    // {
-    //     printf("The Flight ID is: %d\n", r2.value.qfir.flightIds[i]);
-    // }
+    Message r2 = unmarshal(buf + 20);
+    printf("The error is: %s\n", r2.value.res.error);
+    size_t len = r2.length;
+    for (int i = 0; i < len; i++)
+    {
+        printf("The Flight ID is: %d\n", r2.value.res.value.qfi[i].flightId);
+    }
 
     free(bytes);
 
