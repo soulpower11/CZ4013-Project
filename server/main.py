@@ -194,30 +194,38 @@ while True:
             value.msg,
         )
 
+    # bytes, size = utlis.marshal(
+    #     utlis.Response(error="This is a very long error message!"),
+    #     # utlis.Response(
+    #     #     [
+    #     #         utlis.QueryFlightIdResponse(4510),
+    #     #         utlis.QueryFlightIdResponse(24),
+    #     #         utlis.QueryFlightIdResponse(421),
+    #     #         utlis.QueryFlightIdResponse(755),
+    #     #     ]
+    #     # ),
+    #     utlis.ServiceType.QUERY_FLIGHTID,
+    #     utlis.MessageType.REPLY,
+    #     # 0,
+    #     1,
+    # )
+
     bytes, size = utlis.marshal(
-        # utlis.Response(error="Error!!"),
-        utlis.Response(
-            [
-                utlis.QueryFlightIdResponse(4510),
-                utlis.QueryFlightIdResponse(24),
-                utlis.QueryFlightIdResponse(421),
-                utlis.QueryFlightIdResponse(755),
-            ]
-        ),
-        utlis.ServiceType.QUERY_FLIGHTID,
-        utlis.MessageType.REPLY,
+        utlis.ReservationRequest(554, 2),
+        utlis.ServiceType.RESERVATION,
+        utlis.MessageType.REQUEST,
         0,
-        # 1,
     )
+
     replyBytes = bytearray()
     replyBytes.extend(requestId)
     replyBytes.extend(bytes)
 
     print("The size with request ID is", len(replyBytes))
     print("The size is", size)
-    print(" ".join(hex(x) for x in replyBytes))
+    print(" ".join(hex(x) for x in bytes))
     s.sendto(replyBytes, address)
-    break
+    # break
 
     # print("\n\n 2. Server received: ", request[1].source,
     #       request[1].destination, "\n\n")

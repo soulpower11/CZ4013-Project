@@ -137,7 +137,7 @@ def addRequestID(ip, time, bytes, size):
     resultBytes[ipSize : ipSize + timeSize] = timeBytes
     resultBytes[20 : 20 + size] = bytes[:size]
 
-    return resultBytes, 8 + size
+    return resultBytes, 20 + size
 
 
 # Service Type 1 Byte
