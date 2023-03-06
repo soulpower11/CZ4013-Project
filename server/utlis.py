@@ -126,6 +126,20 @@ def getDataType(variable):
         return DataType.TIME_TYPE
 
 
+# IP+Time 20 Bytes
+def addRequestID(ip, time, bytes, size):
+    resultBytes = bytearray(20 + size)
+
+    ipBytes, ipSize = toBytes(ip)
+    timeBytes, timeSize = toBytes(time)
+
+    resultBytes[0:ipSize] = ipBytes
+    resultBytes[ipSize : ipSize + timeSize] = timeBytes
+    resultBytes[20 : 20 + size] = bytes[:size]
+
+    return resultBytes, 8 + size
+
+
 # Service Type 1 Byte
 # Message Type 1 Byte
 # Byte Ordering 1 Byte
