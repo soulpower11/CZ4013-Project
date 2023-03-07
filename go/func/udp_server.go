@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	// HOST = "192.9.175.59"
 	HOST = "localhost"
 	PORT = "8080"
 	TYPE = "udp"

@@ -8,11 +8,13 @@ import pandas as pd
 
 df = None
 ip = "127.0.0.1"
+# ip = "10.0.0.12"
 port = 8080
 s = None
 
 reservation = {}
-monitorCache = {}
+# monitorCache = {}
+monitorCache = []
 
 
 # def set_cache(key, value, timeout):
@@ -36,9 +38,9 @@ monitorCache = {}
 
 def get_cache(key):
     # Check if the key is present in the cache and not expired
-    if key in monitorCache and monitorCache[key]["expiry"] > time.time():
+    if monitorCache[key]["expiry"] > time.time():
         return monitorCache[key]["value"]
-    elif key in monitorCache and monitorCache[key]["expiry"] <= time.time():
+    elif monitorCache[key]["expiry"] <= time.time():
         del monitorCache[key]
         return None
     else:
@@ -47,7 +49,8 @@ def get_cache(key):
 
 def set_cache(key, value, expiry_time):
     # Add the key-value pair to the cache with the expiry time
-    monitorCache[key] = {"value": value, "expiry": time.time() + expiry_time}
+    # monitorCache[key] = {"value": value, "expiry": time.time() + expiry_time}
+    monitorCache.append({"value": value, "expiry": time.time() + expiry_time})
 
 
 def monitor_flight(address, flightID, requestId, monitorInterval):
@@ -89,9 +92,12 @@ def send_updates(flightID):
     print("length:", length)
     print("monitorCache:", monitorCache)
 
-    for i in range(length):
-        val = get_cache(i)
+    index = 0
+    for _ in range(length):
+        val = get_cache(index)
+        print("val", val)
         if val != None:
+            index += 1
             if flightID in val:
                 address = val[flightID][0]
                 requestId = val[flightID][1]
