@@ -111,7 +111,7 @@ func GetDataType[T any](variable T) int32 {
 	return -1
 }
 
-// # IP+Time 20 Bytes
+// IP+Time 20 Bytes
 func AddRequestID(ip string, time time.Time, bytes []byte, size int32) ([]byte, int32) {
 	resultBytes := make([]byte, 20+size)
 
@@ -125,11 +125,11 @@ func AddRequestID(ip string, time time.Time, bytes []byte, size int32) ([]byte, 
 	return resultBytes, 20 + size
 }
 
-// # Service Type 1 Byte
-// # Message Type 1 Byte
-// # Byte Ordering 1 Byte
-// # Error Code 1 Byte
-// # No. of element 4 Byte
+// Service Type 1 Byte
+// Message Type 1 Byte
+// Byte Ordering 1 Byte
+// Error Code 1 Byte
+// No. of element 4 Byte
 func AddRequestHeader(serviceType, messageType, errorCode, noOfElement int32, bytes []byte, size int32) ([]byte, int32) {
 	resultBytes := make([]byte, 8+size)
 
@@ -149,7 +149,7 @@ func AddRequestHeader(serviceType, messageType, errorCode, noOfElement int32, by
 	return resultBytes, 8 + size
 }
 
-// # Length of Element 4 Byte
+// Length of Element 4 Byte
 func AddElementHeader(length int32, bytes []byte, size int32) ([]byte, int32) {
 	resultBytes := make([]byte, 4+size)
 
@@ -161,8 +161,8 @@ func AddElementHeader(length int32, bytes []byte, size int32) ([]byte, int32) {
 	return resultBytes, 4 + size
 }
 
-// # Data Type 1 Byte
-// # Length of variable 4 Byte
+// Data Type 1 Byte
+// Length of variable 4 Byte
 func AddVariableHeader(dataType, length int32, bytes []byte, size int32) ([]byte, int32) {
 	resultBytes := make([]byte, 5+size)
 
@@ -394,9 +394,9 @@ func DecodeError(queryResponse Response, elementsByte []byte, byteOrdering int32
 	return queryResponse
 }
 
-// # 8 Bytes Request Header
-// # 4 Bytes Element Header
-// # 5 Bytes Variable Header
+// 8 Bytes Request Header
+// 4 Bytes Element Header
+// 5 Bytes Variable Header
 func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Response, serviceType int32, errorCode int32) {
 	requestHeader := bytesStr[:8]
 	byteOrdering, serviceType, messageType, errorCode, noOfElement := DecodeRequestHeader(requestHeader)

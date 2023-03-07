@@ -1,5 +1,6 @@
 import socket
 import sys
+import threading
 import time
 import utlis
 import csv
@@ -8,8 +9,116 @@ import pandas as pd
 df = None
 ip = "127.0.0.1"
 port = 8080
+s = None
 
 reservation = {}
+monitorCache = {}
+
+
+# def set_cache(key, value, timeout):
+#     """Adds a key-value pair to the cache with a timeout."""
+#     monitorCache[key] = value
+#     # Create a new thread that waits for the timeout and deletes the key from the cache.
+#     t = threading.Timer(timeout, delete_cache, args=[key])
+#     t.start()
+
+
+# def get_cache(key):
+#     """Retrieves a value from the cache."""
+#     return monitorCache.get(key)
+
+
+# def delete_cache(key):
+#     """Deletes a key from the cache."""
+#     if key in monitorCache:
+#         del monitorCache[key]
+
+
+def get_cache(key):
+    # Check if the key is present in the cache and not expired
+    if key in monitorCache and monitorCache[key]["expiry"] > time.time():
+        return monitorCache[key]["value"]
+    elif key in monitorCache and monitorCache[key]["expiry"] <= time.time():
+        del monitorCache[key]
+        return None
+    else:
+        return None
+
+
+def set_cache(key, value, expiry_time):
+    # Add the key-value pair to the cache with the expiry time
+    monitorCache[key] = {"value": value, "expiry": time.time() + expiry_time}
+
+
+def monitor_flight(address, flightID, requestId, monitorInterval):
+    global monitorCache
+
+    response = utlis.Response()
+    errorCode = 0
+
+    selected_flights = df[(df["FlightID"] == flightID)]
+    selected_flights = selected_flights.reset_index()
+
+    if len(selected_flights.index == 0):
+        length = len(monitorCache)
+        set_cache(length, {flightID: (address, requestId)}, monitorInterval * 60)
+        response = utlis.Response(
+            [utlis.MonitorResponse("Monitoring started succesfully!")]
+        )
+    else:
+        response = utlis.Response(
+            error="The flight ID "
+            + str(flightID)
+            + " you are trying to monitor doesn't exist."
+        )
+        errorCode = 1
+
+    bytes, size = utlis.marshal(
+        response,
+        utlis.ServiceType.MONITOR,
+        utlis.MessageType.REPLY,
+        errorCode,
+    )
+    return bytes, size
+
+
+def send_updates(flightID):
+    global monitorCache
+    length = len(monitorCache)
+    print("Sending Updates")
+    print("length:", length)
+    print("monitorCache:", monitorCache)
+
+    for i in range(length):
+        val = get_cache(i)
+        if val != None:
+            if flightID in val:
+                address = val[flightID][0]
+                requestId = val[flightID][1]
+                seats = df.loc[df["FlightID"] == flightID, "NumSeat"].iloc[0]
+                print("address:", address)
+                print("requestId:", requestId)
+                print("seats:", seats)
+
+                bytes, size = utlis.marshal(
+                    utlis.Response(
+                        [
+                            utlis.MonitorResponse(
+                                "FlightId "
+                                + str(flightID)
+                                + " updated to "
+                                + str(seats)
+                            )
+                        ]
+                    ),
+                    utlis.ServiceType.MONITOR,
+                    utlis.MessageType.REPLY,
+                    0,
+                )
+                replyBytes = bytearray()
+                replyBytes.extend(requestId)
+                replyBytes.extend(bytes)
+                s.sendto(replyBytes, address)
 
 
 def start_server():
@@ -39,7 +148,9 @@ def search_flights(source, destination):
     flightIds = list(map(int, selected_flights["FlightID"].values.astype(int)))
 
     print(flightIds)
-    if len(flightIds) != 0:
+    print(len(flightIds))
+
+    if len(flightIds) > 0:
         response.value = [utlis.QueryFlightIdResponse() for i in range(len(flightIds))]
         for i in range(len(flightIds)):
             response.value[i].flightId = flightIds[i]
@@ -47,7 +158,7 @@ def search_flights(source, destination):
         response = utlis.Response(
             error="No flights from " + source + " to " + destination + " was found."
         )
-        errorCode = 0
+        errorCode = 1
 
     bytes, size = utlis.marshal(
         response,
@@ -111,6 +222,8 @@ def reserve_seat(ip, flightID, seat):
                 reservation[ip][flightID] = seat
         else:
             reservation[ip] = {flightID: seat}
+
+        send_updates(flightID)
         response = utlis.Response([utlis.ReservationResponse("Seats Reversed")])
     elif len(selectedFlight) == 0:
         response = utlis.Response(error="Flight ID " + str(flightID) + " not found.")
@@ -176,6 +289,7 @@ def cancel_reservation(ip, flightID):
             seat = reservation[ip][flightID]
             df.loc[df["FlightID"] == flightID, "NumSeat"] += seat
             del reservation[ip][flightID]
+            send_updates(flightID)
             print("Deleted")
             response = utlis.Response(
                 [
@@ -207,6 +321,7 @@ def cancel_reservation(ip, flightID):
 
 
 def main():
+    global s
     s = start_server()
     load_flight_info()
 
@@ -237,17 +352,16 @@ def main():
             flightID = request[0].flightId
             Seatnum = request[0].noOfSeats
             bytes, size = reserve_seat(address[0], flightID, Seatnum)
-            print(reservation)
+        elif serviceType == 3:
+            flightID = request[0].flightId
+            monitorInterval = request[0].monitorInterval
+            bytes, size = monitor_flight(address, flightID, requestId, monitorInterval)
         elif serviceType == 4:
             flightID = request[0].flightId
             bytes, size = check_reservation(address[0], flightID)
-            print(reservation)
         elif serviceType == 5:
             flightID = request[0].flightId
             bytes, size = cancel_reservation(address[0], flightID)
-            print(reservation)
-
-        print(bytes)
 
         replyBytes = bytearray()
         replyBytes.extend(requestId)

@@ -53,3 +53,14 @@ func GetNoOfSeatsValidate() func(input string) error {
 	}
 	return noOfSeatsValidate
 }
+
+func GetMonitorIntervalValidate() func(input string) error {
+	monitorInterval := func(input string) error {
+		_, err := strconv.ParseUint(input, 10, 32)
+		if err != nil {
+			return errors.New("Invalid interval")
+		}
+		return nil
+	}
+	return monitorInterval
+}

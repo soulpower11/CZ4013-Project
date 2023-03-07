@@ -24,6 +24,9 @@ func main() {
 		case 2:
 			functions.Reservation()
 			break
+		case 3:
+			functions.MonitorFlight()
+			break
 		case 4:
 			functions.CheckReservation()
 			break
