@@ -17,8 +17,8 @@ class ServiceType(IntEnum):
     QUERY_DEPARTURETIME = 1
     RESERVATION = 2
     MONITOR = 3
-    CHECK_ARRIVALTIME = 4
-    CANCALLATION = 5
+    CHECK_RESERVATION = 4
+    CANCELLATION = 5
 
 
 class MessageType(IntEnum):
@@ -77,13 +77,13 @@ class MonitorResponse:
 
 
 @dataclass
-class CheckArrivalTimeRequest:
+class CheckReservationRequest:
     flightId: Optional[int] = None
 
 
 @dataclass
-class CheckArrivalTimeResponse:
-    arrivalTime: Optional[time.struct_time] = None
+class CheckReservationResponse:
+    seatsReserved: Optional[int] = None
 
 
 @dataclass
@@ -103,7 +103,7 @@ class Response:
         List[QueryDepartureTimeResponse],
         List[ReservationResponse],
         List[MonitorResponse],
-        List[CheckArrivalTimeResponse],
+        List[CheckReservationResponse],
         List[CancellationResponse],
         None,
     ] = None

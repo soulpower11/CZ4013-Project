@@ -20,8 +20,8 @@ const (
 	QUERY_DEPARTURETIME
 	RESERVATION
 	MONITOR
-	CHECK_ARRIVALTIME
-	CANCALLATION
+	CHECK_RESERVATION
+	CANCELLATION
 )
 
 type MessageType int32
@@ -75,12 +75,12 @@ type MonitorResponse struct {
 	Msg string
 }
 
-type CheckArrivalTimeRequest struct {
+type CheckReservationRequest struct {
 	FlightId int32
 }
 
-type CheckArrivalTimeResponse struct {
-	ArrivalTime time.Time
+type CheckReservationResponse struct {
+	SeatsReserved int32
 }
 
 type CancellationRequest struct {

@@ -14,8 +14,8 @@ from serviceType import (
     QueryDepartureTimeRequest,
     CancellationRequest,
     CancellationResponse,
-    CheckArrivalTimeRequest,
-    CheckArrivalTimeResponse,
+    CheckReservationRequest,
+    CheckReservationResponse,
     MonitorRequest,
     MonitorResponse,
     ReservationRequest,
@@ -232,21 +232,21 @@ def setField(dataClass, index, value, serviceType, messageType):
         if index == 0:
             dataClass.msg = value
     elif (
-        serviceType == ServiceType.CHECK_ARRIVALTIME
+        serviceType == ServiceType.CHECK_RESERVATION
         and messageType == MessageType.REQUEST
     ):
         if index == 0:
             dataClass.flightId = value
     elif (
-        serviceType == ServiceType.CHECK_ARRIVALTIME
+        serviceType == ServiceType.CHECK_RESERVATION
         and messageType == MessageType.REPLY
     ):
         if index == 0:
-            dataClass.arrivalTime = value
-    elif serviceType == ServiceType.CANCALLATION and messageType == MessageType.REQUEST:
+            dataClass.seatsReserved = value
+    elif serviceType == ServiceType.CANCELLATION and messageType == MessageType.REQUEST:
         if index == 0:
             dataClass.flightId = value
-    elif serviceType == ServiceType.CANCALLATION and messageType == MessageType.REPLY:
+    elif serviceType == ServiceType.CANCELLATION and messageType == MessageType.REPLY:
         if index == 0:
             dataClass.msg = value
 
@@ -353,9 +353,9 @@ def unmarshal(bytesStr):
             queryRequest = [ReservationRequest() for i in range(noOfElement)]
         elif serviceType == ServiceType.MONITOR:
             queryRequest = [MonitorRequest() for i in range(noOfElement)]
-        elif serviceType == ServiceType.CHECK_ARRIVALTIME:
-            queryRequest = [CheckArrivalTimeRequest() for i in range(noOfElement)]
-        elif serviceType == ServiceType.CANCALLATION:
+        elif serviceType == ServiceType.CHECK_RESERVATION:
+            queryRequest = [CheckReservationRequest() for i in range(noOfElement)]
+        elif serviceType == ServiceType.CANCELLATION:
             queryRequest = [CancellationRequest() for i in range(noOfElement)]
 
         queryRequest = decodeQuery(
@@ -380,11 +380,11 @@ def unmarshal(bytesStr):
             queryResponse.value = [ReservationResponse() for i in range(noOfElement)]
         elif serviceType == ServiceType.MONITOR:
             queryResponse.value = [MonitorResponse() for i in range(noOfElement)]
-        elif serviceType == ServiceType.CHECK_ARRIVALTIME:
+        elif serviceType == ServiceType.CHECK_RESERVATION:
             queryResponse.value = [
-                CheckArrivalTimeResponse() for i in range(noOfElement)
+                CheckReservationRequest() for i in range(noOfElement)
             ]
-        elif serviceType == ServiceType.CANCALLATION:
+        elif serviceType == ServiceType.CANCELLATION:
             queryResponse.value = [CancellationResponse() for i in range(noOfElement)]
 
         queryResponse.value = decodeQuery(

@@ -262,23 +262,23 @@ func SetField(dataClass interface{}, index int32, value interface{}, serviceType
 			dataClass = struc
 			break
 		}
-	case serviceType == int32(CHECK_ARRIVALTIME) && messageType == int32(REQUEST):
-		struc, _ := dataClass.(CheckArrivalTimeRequest)
+	case serviceType == int32(CHECK_RESERVATION) && messageType == int32(REQUEST):
+		struc, _ := dataClass.(CheckReservationRequest)
 		switch index {
 		case 0:
 			struc.FlightId = value.(int32)
 			dataClass = struc
 			break
 		}
-	case serviceType == int32(CHECK_ARRIVALTIME) && messageType == int32(REPLY):
-		struc, _ := dataClass.(CheckArrivalTimeResponse)
+	case serviceType == int32(CHECK_RESERVATION) && messageType == int32(REPLY):
+		struc, _ := dataClass.(CheckReservationResponse)
 		switch index {
 		case 0:
-			struc.ArrivalTime = value.(time.Time)
+			struc.SeatsReserved = value.(int32)
 			dataClass = struc
 			break
 		}
-	case serviceType == int32(CANCALLATION) && messageType == int32(REQUEST):
+	case serviceType == int32(CANCELLATION) && messageType == int32(REQUEST):
 		struc, _ := dataClass.(CancellationRequest)
 		switch index {
 		case 0:
@@ -286,7 +286,7 @@ func SetField(dataClass interface{}, index int32, value interface{}, serviceType
 			dataClass = struc
 			break
 		}
-	case serviceType == int32(CANCALLATION) && messageType == int32(REPLY):
+	case serviceType == int32(CANCELLATION) && messageType == int32(REPLY):
 		struc, _ := dataClass.(CancellationResponse)
 		switch index {
 		case 0:
@@ -436,13 +436,13 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 				queryRequest[i] = MonitorRequest{}
 			}
 			break
-		case int32(CHECK_ARRIVALTIME):
+		case int32(CHECK_RESERVATION):
 			queryRequest = make([]interface{}, noOfElement)
 			for i := range queryRequest {
-				queryRequest[i] = CheckArrivalTimeRequest{}
+				queryRequest[i] = CheckReservationRequest{}
 			}
 			break
-		case int32(CANCALLATION):
+		case int32(CANCELLATION):
 			queryRequest = make([]interface{}, noOfElement)
 			for i := range queryRequest {
 				queryRequest[i] = CancellationRequest{}
@@ -487,13 +487,13 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 				queryResponse.Value[i] = MonitorResponse{}
 			}
 			break
-		case int32(CHECK_ARRIVALTIME):
+		case int32(CHECK_RESERVATION):
 			queryResponse.Value = make([]interface{}, noOfElement)
 			for i := range queryResponse.Value {
-				queryResponse.Value[i] = CheckArrivalTimeResponse{}
+				queryResponse.Value[i] = CheckReservationResponse{}
 			}
 			break
-		case int32(CANCALLATION):
+		case int32(CANCELLATION):
 			queryResponse.Value = make([]interface{}, noOfElement)
 			for i := range queryResponse.Value {
 				queryResponse.Value[i] = CancellationResponse{}
