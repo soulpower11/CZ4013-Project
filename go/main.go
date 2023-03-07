@@ -10,11 +10,7 @@ import (
 func main() {
 	fmt.Println("----- Welcome to our airplane service -----")
 	exit := false
-	for {
-		if exit {
-			break
-		}
-
+	for !exit {
 		options := []string{"Look for available flights", "Flight details", "Make seat reservation", "Monitor flight", "Check arrival time", "Cancel seat reservation", "Exit"}
 		choice := utlis.SelectPrompt("Please select your choice:", options)
 

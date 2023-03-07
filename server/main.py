@@ -6,16 +6,21 @@ import csv
 import pandas as pd
 
 df = None
-
 ip = "127.0.0.1"
 port = 8080
 
-# Create a UDP socket
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-# Bind the socket to the port
-server_address = (ip, port)
-s.bind(server_address)
-print("Do Ctrl+c to exit the program !!")
+reservation = {}
+
+
+def start_server():
+    # Create a UDP socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # Bind the socket to the port
+    server_address = (ip, port)
+    s.bind(server_address)
+    print("Do Ctrl+c to exit the program !!")
+
+    return s
 
 
 def load_flight_info():
@@ -96,7 +101,7 @@ def get_flights_details(flightID):
     return bytes, size
 
 
-def ReserveSeat(flightID, seat):
+def ReserveSeat(ip, flightID, seat):
     global df
     # check if Flight ID equals 1 and Num Seats is not less than decrement value
     selectedFlight = df[(df["FlightID"] == flightID)]
@@ -105,6 +110,12 @@ def ReserveSeat(flightID, seat):
     if len(selectedFlight) == 1 and len(noSeat) == 1 and seat <= int(noSeat.values[0]):
         # decrement value
         df.loc[df["FlightID"] == flightID, "NumSeat"] -= seat
+        global reservation
+        if ip in reservation:
+            print("Key-value pair already exists")
+        else:
+            reservation[ip] = {flightID: seat}
+        print("Added key-value pair")
         bytes, size = utlis.marshal(
             utlis.Response([utlis.ReservationResponse("Seats Reversed")]),
             utlis.ServiceType.RESERVATION,
@@ -146,11 +157,14 @@ def ReserveSeat(flightID, seat):
 
 
 def main():
+    s = start_server()
     load_flight_info()
+
     while True:
         print("####### Server is listening #######")
         data, address = s.recvfrom(4096)
         print(data)
+        print(address)
         requestId = data[:20]
         requestByte = data[20:]
         request, serviceType, _ = utlis.unmarshal(requestByte)
@@ -172,8 +186,7 @@ def main():
         elif serviceType == 2:
             flightID = request[0].flightId
             Seatnum = request[0].noOfSeats
-            bytes, size = ReserveSeat(flightID, Seatnum)
-            print(df.to_string())
+            bytes, size = ReserveSeat(address, flightID, Seatnum)
 
         print(bytes)
 
