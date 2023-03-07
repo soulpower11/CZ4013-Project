@@ -341,7 +341,7 @@ def unmarshal(bytesStr):
     if errorCode != 0 and messageType == MessageType.REPLY:
         queryResponse = Response()
         queryResponse = decodeError(queryResponse, elementsByte, byteOrdering)
-        return queryResponse
+        return queryResponse, serviceType, errorCode
 
     if messageType == MessageType.REQUEST:
         queryRequest = []
@@ -367,7 +367,7 @@ def unmarshal(bytesStr):
             messageType,
         )
 
-        return queryRequest
+        return queryRequest, serviceType, errorCode
     elif messageType == MessageType.REPLY:
         queryResponse = Response()
         if serviceType == ServiceType.QUERY_FLIGHTID:
@@ -396,7 +396,7 @@ def unmarshal(bytesStr):
             messageType,
         )
 
-        return queryResponse
+        return queryResponse, serviceType, errorCode
 
 
 def marshal(r, serviceType, messageType, errorCode):

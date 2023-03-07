@@ -1,6 +1,8 @@
 package const_
 
-import "time"
+import (
+	"time"
+)
 
 type DataType int32
 

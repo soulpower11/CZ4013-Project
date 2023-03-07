@@ -5,17 +5,17 @@ import (
 	"encoding/binary"
 	"math"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/soulpower11/CZ4031-Project/const"
 )
 
-type primitive interface {
-	string | int32 | float32 | time.Time | any
-}
-
-type message interface {
-	QueryFlightIdRequest | QueryFlightIdResponse | QueryDepartureTimeResponse | QueryDepartureTimeRequest | CancellationRequest | CancellationResponse | CheckArrivalTimeRequest | CheckArrivalTimeResponse | MonitorRequest | MonitorResponse | ReservationRequest | ReservationResponse | Response
+func StrToInt32(str string) int32 {
+	hold, _ := strconv.ParseUint(strings.TrimSpace(str), 10, 32)
+	hold32 := int32(hold)
+	return hold32
 }
 
 // Always use big endian
@@ -51,7 +51,7 @@ func TimeToBytes(t time.Time) ([]byte, int32) {
 	return _byte, int32(len(_byte))
 }
 
-func ToBytes[T primitive](variable T) ([]byte, int32) {
+func ToBytes[T any](variable T) ([]byte, int32) {
 	switch value := any(variable).(type) {
 	case int32:
 		return Int32ToBytes(value)
@@ -97,7 +97,7 @@ func BytesToTime(_byte []byte, byteOrder int32) time.Time {
 	}
 }
 
-func GetDataType[T primitive](variable T) int32 {
+func GetDataType[T any](variable T) int32 {
 	switch any(variable).(type) {
 	case int32:
 		return int32(INT_TYPE)
@@ -397,7 +397,7 @@ func DecodeError(queryResponse Response, elementsByte []byte, byteOrdering int32
 // # 8 Bytes Request Header
 // # 4 Bytes Element Header
 // # 5 Bytes Variable Header
-func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Response) {
+func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Response, serviceType int32, errorCode int32) {
 	requestHeader := bytesStr[:8]
 	byteOrdering, serviceType, messageType, errorCode, noOfElement := DecodeRequestHeader(requestHeader)
 
@@ -406,7 +406,7 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 	if errorCode != 0 && messageType == int32(REPLY) {
 		queryResponse := Response{}
 		queryResponse = DecodeError(queryResponse, elementsByte, byteOrdering)
-		return nil, queryResponse
+		return nil, queryResponse, serviceType, errorCode
 	}
 
 	if messageType == int32(REQUEST) {
@@ -459,7 +459,7 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 			messageType,
 		)
 
-		return queryRequest, Response{}
+		return queryRequest, Response{}, serviceType, errorCode
 	} else if messageType == int32(REPLY) {
 		queryResponse := Response{}
 		switch serviceType {
@@ -510,9 +510,9 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 			messageType,
 		)
 
-		return nil, queryResponse
+		return nil, queryResponse, serviceType, errorCode
 	}
-	return nil, Response{}
+	return nil, Response{}, serviceType, errorCode
 }
 
 func Marshal(r interface{}, serviceType, messageType, errorCode int32) ([]byte, int32) {

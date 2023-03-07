@@ -2,6 +2,10 @@ import socket
 import sys
 import time
 import utlis
+import csv
+import pandas as pd
+
+df = None
 
 ip = "127.0.0.1"
 port = 8080
@@ -13,225 +17,172 @@ server_address = (ip, port)
 s.bind(server_address)
 print("Do Ctrl+c to exit the program !!")
 
-while True:
-    print("####### Server is listening #######")
-    data, address = s.recvfrom(4096)
-    requestId = data[:20]
-    print(requestId)
-    request = utlis.unmarshal(data[20:])
-    print(
-        "\n\n 2. Server received: ", request[0].source, request[0].destination, "\n\n"
-    )
 
-    # requestMarshal, _ = utlis.marshal(
-    #     utlis.QueryFlightIdRequest("Malaysia", "Singapore"),
-    #     utlis.ServiceType.QUERY_FLIGHTID,
-    #     utlis.MessageType.REQUEST,
-    #     0,
-    # )
-    # r1 = utlis.unmarshal(requestMarshal)
-    # print("Source:", r1[0].source, "Destination:", r1[0].destination)
+def load_flight_info():
+    global df
+    df = pd.read_csv("flightInfo.csv")
 
-    # replyMarshal, _ = utlis.marshal(
-    #     utlis.Response(
-    #         [
-    #             utlis.QueryFlightIdResponse(52),
-    #             utlis.QueryFlightIdResponse(25),
-    #             utlis.QueryFlightIdResponse(351),
-    #         ]
-    #     ),
-    #     utlis.ServiceType.QUERY_FLIGHTID,
-    #     utlis.MessageType.REPLY,
-    #     0,
-    # )
-    # r2 = utlis.unmarshal(replyMarshal)
-    # # print(r2.error)
-    # for value in r2.value:
-    #     print(
-    #         "Flight ID:",
-    #         value.flightId,
-    #     )
 
-    # requestMarshal, _ = utlis.marshal(
-    #     utlis.QueryDepartureTimeRequest(555),
-    #     utlis.ServiceType.QUERY_DEPARTURETIME,
-    #     utlis.MessageType.REQUEST,
-    #     0,
-    # )
-    # r1 = utlis.unmarshal(requestMarshal)
-    # print("Flight ID:", r1[0].flightId)
+def search_flights(source, destination):
+    # Use boolean indexing to select the rows that match your criteria
+    selected_flights = df[(df["From"] == source) & (df["To"] == destination)]
 
-    # replyMarshal, _ = utlis.marshal(
-    #     utlis.Response(
-    #         [
-    #             utlis.QueryDepartureTimeResponse(time.localtime(), 54.32, 50),
-    #             utlis.QueryDepartureTimeResponse(time.localtime(), 99.99, 152),
-    #             utlis.QueryDepartureTimeResponse(time.localtime(), 551.99, 21),
-    #             utlis.QueryDepartureTimeResponse(time.localtime(), 987.52, 654),
-    #         ]
-    #     ),
-    #     utlis.ServiceType.QUERY_DEPARTURETIME,
-    #     utlis.MessageType.REPLY,
-    #     0,
-    # )
-    # r2 = utlis.unmarshal(replyMarshal)
-    # # print(r2.error)
-    # for value in r2.value:
-    #     print(
-    #         "Time:",
-    #         value.departureTime,
-    #         "Air Fare:",
-    #         value.airFare,
-    #         "Seat Availability",
-    #         value.seatAvailability,
-    #     )
+    # Get the FlightID column from the selected rows
+    flightIds = list(map(int, selected_flights["FlightID"].values.astype(int)))
 
-    # requestMarshal, _ = utlis.marshal(
-    #     utlis.ReservationRequest(554, 2),
-    #     utlis.ServiceType.RESERVATION,
-    #     utlis.MessageType.REQUEST,
-    #     0,
-    # )
-    # r1 = utlis.unmarshal(requestMarshal)
-    # print("Flight ID:", r1[0].flightId, "No. of Seats:", r1[0].noOfSeats)
+    print(flightIds)
+    if len(flightIds) != 0:
+        print("found")
+        queryResponse = utlis.Response()
+        queryResponse.value = [
+            utlis.QueryFlightIdResponse() for i in range(len(flightIds))
+        ]
+        for i in range(len(flightIds)):
+            queryResponse.value[i].flightId = flightIds[i]
 
-    # replyMarshal, _ = utlis.marshal(
-    #     utlis.Response(
-    #         [
-    #             utlis.ReservationResponse("Done!"),
-    #         ]
-    #     ),
-    #     utlis.ServiceType.RESERVATION,
-    #     utlis.MessageType.REPLY,
-    #     0,
-    # )
-    # r2 = utlis.unmarshal(replyMarshal)
-    # # print(r2.error)
-    # for value in r2.value:
-    #     print(
-    #         "Msg:",
-    #         value.msg,
-    #     )
+        bytes, size = utlis.marshal(
+            queryResponse,
+            utlis.ServiceType.QUERY_FLIGHTID,
+            utlis.MessageType.REPLY,
+            0,
+        )
+    else:
+        print("not found")
+        bytes, size = utlis.marshal(
+            utlis.Response(
+                error="No flights from " + source + " to " + destination + " was found."
+            ),
+            utlis.ServiceType.QUERY_FLIGHTID,
+            utlis.MessageType.REPLY,
+            1,
+        )
+    return bytes, size
 
-    # requestMarshal, _ = utlis.marshal(
-    #     utlis.MonitorRequest(335, 6),
-    #     utlis.ServiceType.MONITOR,
-    #     utlis.MessageType.REQUEST,
-    #     0,
-    # )
-    # r1 = utlis.unmarshal(requestMarshal)
-    # print("Flight ID:", r1[0].flightId, "Monitor Interval:", r1[0].monitorInterval)
 
-    # replyMarshal, _ = utlis.marshal(
-    #     utlis.Response(
-    #         [
-    #             utlis.MonitorResponse("Update!"),
-    #         ]
-    #     ),
-    #     utlis.ServiceType.RESERVATION,
-    #     utlis.MessageType.REPLY,
-    #     0,
-    # )
-    # r2 = utlis.unmarshal(replyMarshal)
-    # # print(r2.error)
-    # for value in r2.value:
-    #     print(
-    #         "Msg:",
-    #         value.msg,
-    #     )
+def get_flights_details(flightID):
+    selected_flights = df[(df["FlightID"] == flightID)]
+    selected_flights = (
+        selected_flights.reset_index()
+    )  # make sure indexes pair with number of rows
 
-    # requestMarshal, _ = utlis.marshal(
-    #     utlis.CheckArrivalTimeRequest(542),
-    #     utlis.ServiceType.CHECK_ARRIVALTIME,
-    #     utlis.MessageType.REQUEST,
-    #     0,
-    # )
-    # r1 = utlis.unmarshal(requestMarshal)
-    # print("Flight ID:", r1[0].flightId)
+    if len(selected_flights.index == 0):
+        queryResponse = utlis.Response()
+        queryResponse.value = [
+            utlis.QueryDepartureTimeResponse()
+            for i in range(len(selected_flights.index))
+        ]
 
-    # replyMarshal, _ = utlis.marshal(
-    #     utlis.Response(
-    #         [
-    #             utlis.CheckArrivalTimeResponse(time.localtime()),
-    #         ]
-    #     ),
-    #     utlis.ServiceType.CHECK_ARRIVALTIME,
-    #     utlis.MessageType.REPLY,
-    #     0,
-    # )
-    # r2 = utlis.unmarshal(replyMarshal)
-    # # print(r2.error)
-    # for value in r2.value:
-    #     print(
-    #         "Arrival Time:",
-    #         value.arrivalTime,
-    #     )
+        for i, row in selected_flights.iterrows():
+            queryResponse.value[i].departureTime = time.strptime(
+                row["DepartTime"], "%d/%m/%Y %H:%M"
+            )
+            queryResponse.value[i].airFare = row["Airfare"]
+            queryResponse.value[i].seatAvailability = row["NumSeat"]
 
-    requestMarshal, _ = utlis.marshal(
-        utlis.CancellationRequest(643),
-        utlis.ServiceType.CANCALLATION,
-        utlis.MessageType.REQUEST,
-        0,
-    )
-    r1 = utlis.unmarshal(requestMarshal)
-    print("Flight ID:", r1[0].flightId)
-
-    replyMarshal, _ = utlis.marshal(
-        utlis.Response(
-            [
-                utlis.CancellationResponse("Cancelled!!"),
-            ]
-        ),
-        utlis.ServiceType.CANCALLATION,
-        utlis.MessageType.REPLY,
-        0,
-    )
-    r2 = utlis.unmarshal(replyMarshal)
-    # print(r2.error)
-    for value in r2.value:
-        print(
-            "Msg:",
-            value.msg,
+        bytes, size = utlis.marshal(
+            queryResponse,
+            utlis.ServiceType.QUERY_DEPARTURETIME,
+            utlis.MessageType.REPLY,
+            0,
+        )
+    else:
+        bytes, size = utlis.marshal(
+            utlis.Response(error="Flight ID " + str(flightID) + " not found."),
+            utlis.ServiceType.QUERY_DEPARTURETIME,
+            utlis.MessageType.REPLY,
+            1,
         )
 
-    # bytes, size = utlis.marshal(
-    #     utlis.Response(error="This is a very long error message!"),
-    #     # utlis.Response(
-    #     #     [
-    #     #         utlis.QueryFlightIdResponse(4510),
-    #     #         utlis.QueryFlightIdResponse(24),
-    #     #         utlis.QueryFlightIdResponse(421),
-    #     #         utlis.QueryFlightIdResponse(755),
-    #     #     ]
-    #     # ),
-    #     utlis.ServiceType.QUERY_FLIGHTID,
-    #     utlis.MessageType.REPLY,
-    #     # 0,
-    #     1,
-    # )
+    return bytes, size
 
-    bytes, size = utlis.marshal(
-        utlis.ReservationRequest(554, 2),
-        utlis.ServiceType.RESERVATION,
-        utlis.MessageType.REQUEST,
-        0,
-    )
 
-    replyBytes = bytearray()
-    replyBytes.extend(requestId)
-    replyBytes.extend(bytes)
+def ReserveSeat(flightID, seat):
+    global df
+    # check if Flight ID equals 1 and Num Seats is not less than decrement value
+    selectedFlight = df[(df["FlightID"] == flightID)]
+    noSeat = selectedFlight["NumSeat"]
 
-    print("The size with request ID is", len(replyBytes))
-    print("The size is", size)
-    print(" ".join(hex(x) for x in bytes))
-    s.sendto(replyBytes, address)
-    # break
+    if len(selectedFlight) == 1 and len(noSeat) == 1 and seat <= int(noSeat.values[0]):
+        # decrement value
+        df.loc[df["FlightID"] == flightID, "NumSeat"] -= seat
+        bytes, size = utlis.marshal(
+            utlis.Response([utlis.ReservationResponse("Seats Reversed")]),
+            utlis.ServiceType.RESERVATION,
+            utlis.MessageType.REPLY,
+            0,
+        )
+    elif len(selectedFlight) == 0:
+        bytes, size = utlis.marshal(
+            utlis.Response(error="Flight ID " + str(flightID) + " not found."),
+            utlis.ServiceType.RESERVATION,
+            utlis.MessageType.REPLY,
+            1,
+        )
+    elif len(selectedFlight) > 1:
+        bytes, size = utlis.marshal(
+            utlis.Response(error="Server Error."),
+            utlis.ServiceType.RESERVATION,
+            utlis.MessageType.REPLY,
+            1,
+        )
+    elif seat > int(noSeat.values[0]):
+        bytes, size = utlis.marshal(
+            utlis.Response(
+                error="Flight ID " + str(flightID) + " have not enough seats."
+            ),
+            utlis.ServiceType.RESERVATION,
+            utlis.MessageType.REPLY,
+            1,
+        )
+    else:
+        bytes, size = utlis.marshal(
+            utlis.Response(error="Server Error."),
+            utlis.ServiceType.RESERVATION,
+            utlis.MessageType.REPLY,
+            1,
+        )
 
-    # print("\n\n 2. Server received: ", request[1].source,
-    #       request[1].destination, "\n\n")
-    # print("\n\n 2. Server received: ", request.source,
-    #       request.destination, "\n\n")
-    # print("\n\n 2. Server received: ", data.decode('utf-8'), "\n\n")
-    # send_data = input("Type some text to send => ")
-    # s.sendto(send_data.encode("utf-8"), address)
-    # print("\n\n 1. Server sent : ", send_data, "\n\n")
+    return bytes, size
+
+
+def main():
+    load_flight_info()
+    while True:
+        print("####### Server is listening #######")
+        data, address = s.recvfrom(4096)
+        print(data)
+        requestId = data[:20]
+        requestByte = data[20:]
+        request, serviceType, _ = utlis.unmarshal(requestByte)
+        print(df.to_string())
+
+        print(serviceType)
+
+        if serviceType == 0:
+            print(
+                "\nServer received: ", request[0].source, request[0].destination, "\n"
+            )
+            source = request[0].source.lower()
+            destination = request[0].destination.lower()
+            print(source, destination)
+            bytes, size = search_flights(source, destination)
+        elif serviceType == 1:
+            flightId = request[0].flightId
+            bytes, size = get_flights_details(flightId)
+        elif serviceType == 2:
+            flightID = request[0].flightId
+            Seatnum = request[0].noOfSeats
+            bytes, size = ReserveSeat(flightID, Seatnum)
+            print(df.to_string())
+
+        print(bytes)
+
+        replyBytes = bytearray()
+        replyBytes.extend(requestId)
+        replyBytes.extend(bytes)
+        s.sendto(replyBytes, address)
+        # break
+
+
+if __name__ == "__main__":
+    main()

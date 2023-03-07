@@ -1,0 +1,5 @@
+FlightID,From,To,DepartTime,Airfare,NumSeat
+1,singapore,taiwan,7/3/2023 12:45,500.11,100
+2,singapore,taiwan,10/3/2023 12:23,300.00,100
+3,singapore,taiwan,19/4/2023 12:22,400.00,100
+1,taiwan,china,10/3/2023 4:22,1200.00,100
