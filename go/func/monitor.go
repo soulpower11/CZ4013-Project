@@ -23,7 +23,7 @@ func MonitorFlight() {
 		return
 	}
 
-	conn, ip := connect()
+	conn, ip := listener()
 	defer conn.Close()
 
 	send := MonitorRequest{
@@ -33,18 +33,21 @@ func MonitorFlight() {
 	bytes_, size := utlis.Marshal(send, int32(MONITOR), int32(REQUEST), int32(0))
 	bytes_, size = utlis.AddRequestID(ip, time.Now(), bytes_, size)
 
-	_, err := conn.Write(bytes_)
+	// _, err := conn.Write(bytes_)
+	udpServer, err := net.ResolveUDPAddr(TYPE, fmt.Sprintf("%s:%s", HOST, PORT))
+	_, err = conn.WriteToUDP(bytes_, udpServer)
+
 	if err != nil {
 		println("Write data failed:", err.Error())
 		os.Exit(1)
 	}
 
 	timeOut := time.Duration(utlis.StrToInt32(*monitorInterval)) * time.Minute
-	conn.SetDeadline(time.Now().Add(timeOut))
+	conn.SetReadDeadline(time.Now().Add(timeOut))
 
 	for start := time.Now(); time.Since(start) < timeOut; {
-		received := make([]byte, 1024)
-		_, err = conn.Read(received)
+		received := make([]byte, 4096)
+		_, _, err = conn.ReadFrom(received)
 
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
