@@ -6,6 +6,9 @@ import utlis
 import csv
 import pandas as pd
 
+# Use IP from Request ID for reservation
+# the one many thing
+
 df = None
 ip = "127.0.0.1"
 # ip = "10.0.0.12"
