@@ -25,8 +25,6 @@ func QueryFlightId(on int) {
 		return
 	}
 
-	fmt.Printf("CURRENT ON = %d\n", on)
-
 	conn, ip := connect()
 	defer conn.Close()
 

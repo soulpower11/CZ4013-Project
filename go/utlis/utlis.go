@@ -518,17 +518,10 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 	return nil, Response{}, serviceType, errorCode
 }
 
-func Marshal(r interface{}, serviceType, messageType, errorCode, on_off int32) ([]byte, int32) {
+func Marshal(r interface{}, serviceType, messageType, on_off, errorCode int32) ([]byte, int32) {
 	length := int32(1)
 	resultSize := int32(0)
 	resultBytes := []byte{}
-
-	var OnOff int32
-	if on_off == 0 {
-		OnOff = 0
-	} else {
-		OnOff = 1
-	}
 
 	if errorCode != 0 && messageType == int32(REPLY) {
 		errorBytes, errorSize := ToBytes(r.(*Response).Error)
@@ -538,7 +531,7 @@ func Marshal(r interface{}, serviceType, messageType, errorCode, on_off int32) (
 		resultSize += errorSize
 		resultBytes = append(resultBytes, errorBytes...)
 		bytes, size := AddRequestHeader(
-			serviceType, messageType, errorCode, OnOff, length, resultBytes, resultSize,
+			serviceType, messageType, errorCode, on_off, length, resultBytes, resultSize,
 		)
 		return bytes, size
 	}

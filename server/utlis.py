@@ -339,7 +339,6 @@ def unmarshal(bytesStr):
     ) = decodeRequestHeader(requestHeader)
 
     elementsByte = bytesStr[9:]
-    print("ON OFFF euqal to: ", on_off)
 
     if on_off == 0:
         if errorCode != 0 and messageType == MessageType.REPLY:
@@ -402,7 +401,7 @@ def unmarshal(bytesStr):
 
             return queryResponse, serviceType, errorCode
     elif on_off == 1:
-        return "drop"
+        return True
 
 
 def marshal(r, serviceType, messageType, errorCode):
