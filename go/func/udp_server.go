@@ -69,11 +69,11 @@ func listener() (*net.UDPConn, string, error) {
 	return conn, ip, nil
 }
 
-func sendToServer(conn *net.UDPConn, bytes_ []byte, timeOut int32) ([]byte, error) {
+func sendToServer(conn *net.UDPConn, bytes_ []byte, packetLoss int32) ([]byte, error) {
 	var received []byte
 	for i := 0; i < MAXRETRIES; i++ {
 		if i == 4 {
-			bytes_ = utlis.TurnTimeOutOff(bytes_)
+			bytes_ = utlis.TurnPacketLossOff(bytes_)
 		}
 
 		_, err := conn.Write(bytes_)
@@ -103,7 +103,7 @@ func sendToServer(conn *net.UDPConn, bytes_ []byte, timeOut int32) ([]byte, erro
 	return received, nil
 }
 
-func sendToServerAsListener(conn *net.UDPConn, bytes_ []byte, timeOut int32) ([]byte, []byte, error) {
+func sendToServerAsListener(conn *net.UDPConn, bytes_ []byte, packetLoss int32) ([]byte, []byte, error) {
 	var received []byte
 
 	udpServer, err := net.ResolveUDPAddr(TYPE, fmt.Sprintf("%s:%s", HOST, PORT))
@@ -113,7 +113,7 @@ func sendToServerAsListener(conn *net.UDPConn, bytes_ []byte, timeOut int32) ([]
 	}
 	for i := 0; i < MAXRETRIES; i++ {
 		if i == 4 {
-			bytes_ = utlis.TurnTimeOutOff(bytes_)
+			bytes_ = utlis.TurnPacketLossOff(bytes_)
 		}
 
 		_, err := conn.WriteToUDP(bytes_, udpServer)

@@ -350,11 +350,11 @@ def at_most_once():
 
         duplicated = check_duplicated_requestIds(requestId)
         requestByte = data[23:]
-        request, serviceType, _, timeOut = utlis.unmarshal(requestByte)
+        request, serviceType, _, packetLoss = utlis.unmarshal(requestByte)
 
         print(df.to_string())
         print("Service Type:", serviceType)
-        print("Time Out:", timeOut)
+        print("Time Out:", packetLoss)
 
         if not duplicated:
             if serviceType == 0:
@@ -390,7 +390,7 @@ def at_most_once():
 
             set_response_cache(requestId, bytes, 5 * 60)
 
-            if not timeOut:
+            if not packetLoss:
                 replyBytes = bytearray()
                 replyBytes.extend(requestId)
                 replyBytes.extend(bytes)
@@ -398,7 +398,7 @@ def at_most_once():
         else:
             bytes = get_response_cache(requestId)
 
-            if not timeOut:
+            if not packetLoss:
                 replyBytes = bytearray()
                 replyBytes.extend(requestId)
                 replyBytes.extend(bytes)
@@ -420,11 +420,11 @@ def at_least_once():
         print(len(ip))
 
         requestByte = data[23:]
-        request, serviceType, _, timeOut = utlis.unmarshal(requestByte)
+        request, serviceType, _, packetLoss = utlis.unmarshal(requestByte)
 
         print(df.to_string())
         print("Service Type:", serviceType)
-        print("Time Out:", timeOut)
+        print("Time Out:", packetLoss)
 
         if serviceType == 0:
             print(
@@ -452,7 +452,7 @@ def at_least_once():
             flightID = request[0].flightId
             bytes, size = cancel_reservation(ip, flightID)
 
-        if not timeOut:
+        if not packetLoss:
             replyBytes = bytearray()
             replyBytes.extend(requestId)
             replyBytes.extend(bytes)

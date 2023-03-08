@@ -10,39 +10,33 @@ import (
 func main() {
 	fmt.Println("----- Welcome to our airplane service -----")
 	exit := false
-	timeOut := int32(0)
+	packetLoss := int32(0)
 
 	for !exit {
-		options := []string{"Look for available flights", "Flight details", "Make seat reservation", "Monitor flight", "Check seat reservation", "Cancel seat reservation", "Toggle Simulated Timeout", "Exit"}
+		options := []string{"Look for available flights", "Flight details", "Make seat reservation", "Monitor flight", "Check seat reservation", "Cancel seat reservation", "Toggle Simulated Packet Loss", "Exit"}
 		choice := utlis.SelectPrompt("Please select your choice:", options)
 
 		switch choice {
 		case 0:
-			functions.QueryFlightId(timeOut)
+			functions.QueryFlightId(packetLoss)
 			break
 		case 1:
-			functions.QueryDepartureTime(timeOut)
+			functions.QueryDepartureTime(packetLoss)
 			break
 		case 2:
-			functions.Reservation(timeOut)
+			functions.Reservation(packetLoss)
 			break
 		case 3:
-			functions.MonitorFlight(timeOut)
+			functions.MonitorFlight(packetLoss)
 			break
 		case 4:
-			functions.CheckReservation(timeOut)
+			functions.CheckReservation(packetLoss)
 			break
 		case 5:
-			functions.Cancellation(timeOut)
+			functions.Cancellation(packetLoss)
 			break
 		case 6:
-			if timeOut == 0 {
-				println("Time Out is turned on")
-				timeOut = int32(1)
-			} else {
-				println("Time Out is turned off")
-				timeOut = int32(0)
-			}
+			packetLoss = functions.TogglePacketLoss(packetLoss)
 			break
 		case 7:
 			exit = true

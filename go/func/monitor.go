@@ -10,7 +10,7 @@ import (
 	"github.com/soulpower11/CZ4031-Project/utlis"
 )
 
-func MonitorFlight(timeOut int32) {
+func MonitorFlight(packetLoss int32) {
 	flightId := utlis.TextPrompt("Flight ID:", GetFlightIdValidate())
 	if flightId == nil {
 		fmt.Println("Exit Monitor Flight")
@@ -34,10 +34,10 @@ func MonitorFlight(timeOut int32) {
 		FlightId:        utlis.StrToInt32(*flightId),
 		MonitorInterval: utlis.StrToInt32(*monitorInterval),
 	}
-	bytes_, size := utlis.Marshal(send, int32(MONITOR), int32(REQUEST), int32(0), timeOut)
+	bytes_, size := utlis.Marshal(send, int32(MONITOR), int32(REQUEST), int32(0), packetLoss)
 	bytes_, size = utlis.AddRequestID(ip, time.Now(), bytes_, size)
 
-	received, bytes_, err := sendToServerAsListener(conn, bytes_, timeOut)
+	received, bytes_, err := sendToServerAsListener(conn, bytes_, packetLoss)
 	if err != nil {
 		log.Print(err.Error())
 		return

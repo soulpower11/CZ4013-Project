@@ -9,7 +9,7 @@ import (
 	"github.com/soulpower11/CZ4031-Project/utlis"
 )
 
-func QueryFlightId(timeOut int32) {
+func QueryFlightId(packetLoss int32) {
 	source := utlis.TextPrompt("Source:", GetCountryNameValidate())
 	if source == nil {
 		fmt.Println("Exit Query Flight Id")
@@ -33,10 +33,10 @@ func QueryFlightId(timeOut int32) {
 		Source:      *source,
 		Destination: *destination,
 	}
-	bytes_, size := utlis.Marshal(send, int32(QUERY_FLIGHTID), int32(REQUEST), int32(0), timeOut)
+	bytes_, size := utlis.Marshal(send, int32(QUERY_FLIGHTID), int32(REQUEST), int32(0), packetLoss)
 	bytes_, size = utlis.AddRequestID(ip, time.Now(), bytes_, size)
 
-	received, err := sendToServer(conn, bytes_, timeOut)
+	received, err := sendToServer(conn, bytes_, packetLoss)
 	if err != nil {
 		log.Print(err.Error())
 		return

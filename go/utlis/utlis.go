@@ -131,10 +131,10 @@ func AddRequestID(ip string, time time.Time, bytes []byte, size int32) ([]byte, 
 	return resultBytes, 23 + size
 }
 
-func TurnTimeOutOff(bytes_ []byte) []byte {
-	timeOutBytes := Int32ToByte(0)
+func TurnPacketLossOff(bytes_ []byte) []byte {
+	packetLossBytes := Int32ToByte(0)
 
-	copy(bytes_[27:28], timeOutBytes)
+	copy(bytes_[27:28], packetLossBytes)
 	return bytes_
 }
 
@@ -144,21 +144,21 @@ func TurnTimeOutOff(bytes_ []byte) []byte {
 // Error Code 1 Byte
 // Time Out 1 Byte
 // No. of element 4 Byte
-func AddRequestHeader(serviceType, messageType, errorCode, timeOut, noOfElement int32, bytes []byte, size int32) ([]byte, int32) {
+func AddRequestHeader(serviceType, messageType, errorCode, packetLoss, noOfElement int32, bytes []byte, size int32) ([]byte, int32) {
 	resultBytes := make([]byte, 9+size)
 
 	serviceBytes := Int32ToByte(serviceType)
 	messageBytes := Int32ToByte(messageType)
 	byteOrderingBytes := Int32ToByte(GetEndianness())
 	errorCodeBytes := Int32ToByte(errorCode)
-	timeOutBytes := Int32ToByte(timeOut)
+	packetLossBytes := Int32ToByte(packetLoss)
 	noOfElementBytes, noOfElementSize := ToBytes(noOfElement)
 
 	copy(resultBytes[0:1], serviceBytes)
 	copy(resultBytes[1:2], messageBytes)
 	copy(resultBytes[2:3], byteOrderingBytes)
 	copy(resultBytes[3:4], errorCodeBytes)
-	copy(resultBytes[4:5], timeOutBytes)
+	copy(resultBytes[4:5], packetLossBytes)
 	copy(resultBytes[5:5+noOfElementSize], noOfElementBytes)
 	copy(resultBytes[9:9+size], bytes[:size])
 
@@ -326,10 +326,10 @@ func DecodeRequestHeader(requestHeader []byte) (int32, int32, int32, int32, int3
 	serviceType := ByteToInt32(requestHeader[0:1])
 	messageType := ByteToInt32(requestHeader[1:2])
 	errorCode := ByteToInt32(requestHeader[3:4])
-	timeOut := ByteToInt32(requestHeader[4:5])
+	packetLoss := ByteToInt32(requestHeader[4:5])
 	noOfElement := BytesToInt32(requestHeader[5:], byteOrdering)
 
-	return byteOrdering, serviceType, messageType, errorCode, timeOut, noOfElement
+	return byteOrdering, serviceType, messageType, errorCode, packetLoss, noOfElement
 }
 
 func DecodeElementHeader(elementsByte []byte, byteOrdering int32) (int32, []byte) {
@@ -421,16 +421,16 @@ func DecodeError(queryResponse Response, elementsByte []byte, byteOrdering int32
 // 8 Bytes Request Header
 // 4 Bytes Element Header
 // 5 Bytes Variable Header
-func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Response, serviceType, errorCode, timeOut int32) {
+func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Response, serviceType, errorCode, packetLoss int32) {
 	requestHeader := bytesStr[:9]
-	byteOrdering, serviceType, messageType, errorCode, timeOut, noOfElement := DecodeRequestHeader(requestHeader)
+	byteOrdering, serviceType, messageType, errorCode, packetLoss, noOfElement := DecodeRequestHeader(requestHeader)
 
 	elementsByte := bytesStr[9:]
 
 	if errorCode != 0 && messageType == int32(REPLY) {
 		queryResponse := Response{}
 		queryResponse = DecodeError(queryResponse, elementsByte, byteOrdering)
-		return nil, queryResponse, serviceType, errorCode, timeOut
+		return nil, queryResponse, serviceType, errorCode, packetLoss
 	}
 
 	if messageType == int32(REQUEST) {
@@ -483,7 +483,7 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 			messageType,
 		)
 
-		return queryRequest, Response{}, serviceType, errorCode, timeOut
+		return queryRequest, Response{}, serviceType, errorCode, packetLoss
 	} else if messageType == int32(REPLY) {
 		queryResponse := Response{}
 		switch serviceType {
@@ -534,12 +534,12 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 			messageType,
 		)
 
-		return nil, queryResponse, serviceType, errorCode, timeOut
+		return nil, queryResponse, serviceType, errorCode, packetLoss
 	}
-	return nil, Response{}, serviceType, errorCode, timeOut
+	return nil, Response{}, serviceType, errorCode, packetLoss
 }
 
-func Marshal(r interface{}, serviceType, messageType, errorCode, timeOut int32) ([]byte, int32) {
+func Marshal(r interface{}, serviceType, messageType, errorCode, packetLoss int32) ([]byte, int32) {
 	length := int32(1)
 	resultSize := int32(0)
 	resultBytes := []byte{}
@@ -552,7 +552,7 @@ func Marshal(r interface{}, serviceType, messageType, errorCode, timeOut int32) 
 		resultSize += errorSize
 		resultBytes = append(resultBytes, errorBytes...)
 		bytes, size := AddRequestHeader(
-			serviceType, messageType, errorCode, timeOut, length, resultBytes, resultSize,
+			serviceType, messageType, errorCode, packetLoss, length, resultBytes, resultSize,
 		)
 		return bytes, size
 	}
@@ -612,7 +612,7 @@ func Marshal(r interface{}, serviceType, messageType, errorCode, timeOut int32) 
 	}
 
 	bytes, size := AddRequestHeader(
-		serviceType, messageType, errorCode, timeOut, length, resultBytes, resultSize,
+		serviceType, messageType, errorCode, packetLoss, length, resultBytes, resultSize,
 	)
 	return bytes, size
 }

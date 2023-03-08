@@ -9,7 +9,7 @@ import (
 	"github.com/soulpower11/CZ4031-Project/utlis"
 )
 
-func CheckReservation(timeOut int32) {
+func CheckReservation(packetLoss int32) {
 	flightId := utlis.TextPrompt("Flight ID:", GetFlightIdValidate())
 	if flightId == nil {
 		fmt.Println("Exit Check Reservation")
@@ -26,10 +26,10 @@ func CheckReservation(timeOut int32) {
 	send := CheckReservationRequest{
 		FlightId: utlis.StrToInt32(*flightId),
 	}
-	bytes_, size := utlis.Marshal(send, int32(CHECK_RESERVATION), int32(REQUEST), int32(0), timeOut)
+	bytes_, size := utlis.Marshal(send, int32(CHECK_RESERVATION), int32(REQUEST), int32(0), packetLoss)
 	bytes_, size = utlis.AddRequestID(ip, time.Now(), bytes_, size)
 
-	received, err := sendToServer(conn, bytes_, timeOut)
+	received, err := sendToServer(conn, bytes_, packetLoss)
 	if err != nil {
 		log.Print(err.Error())
 		return
