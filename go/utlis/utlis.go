@@ -130,9 +130,11 @@ func AddRequestID(ip string, time time.Time, bytes []byte, size int32) ([]byte, 
 // Byte Ordering 1 Byte
 // Error Code 1 Byte
 // No. of element 4 Byte
-func AddRequestHeader(serviceType, messageType, errorCode, noOfElement int32, bytes []byte, size int32) ([]byte, int32) {
-	resultBytes := make([]byte, 8+size)
+func AddRequestHeader(serviceType, messageType, errorCode, on_off, noOfElement int32, bytes []byte, size int32) ([]byte, int32) {
 
+	resultBytes := make([]byte, 9+size)
+
+	on_offBytes := Int32ToByte(on_off)
 	serviceBytes := Int32ToByte(serviceType)
 	messageBytes := Int32ToByte(messageType)
 	byteOrderingBytes := Int32ToByte(GetEndianness())
@@ -143,10 +145,11 @@ func AddRequestHeader(serviceType, messageType, errorCode, noOfElement int32, by
 	copy(resultBytes[1:2], messageBytes)
 	copy(resultBytes[2:3], byteOrderingBytes)
 	copy(resultBytes[3:4], errorCodeBytes)
-	copy(resultBytes[4:4+noOfElementSize], noOfElementBytes)
-	copy(resultBytes[8:8+size], bytes[:size])
+	copy(resultBytes[4:5], on_offBytes)
+	copy(resultBytes[5:5+noOfElementSize], noOfElementBytes)
+	copy(resultBytes[9:9+size], bytes[:size])
 
-	return resultBytes, 8 + size
+	return resultBytes, 9 + size
 }
 
 // Length of Element 4 Byte
@@ -515,10 +518,17 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 	return nil, Response{}, serviceType, errorCode
 }
 
-func Marshal(r interface{}, serviceType, messageType, errorCode int32) ([]byte, int32) {
+func Marshal(r interface{}, serviceType, messageType, errorCode, on_off int32) ([]byte, int32) {
 	length := int32(1)
 	resultSize := int32(0)
 	resultBytes := []byte{}
+
+	var OnOff int32
+	if on_off == 0 {
+		OnOff = 0
+	} else {
+		OnOff = 1
+	}
 
 	if errorCode != 0 && messageType == int32(REPLY) {
 		errorBytes, errorSize := ToBytes(r.(*Response).Error)
@@ -528,7 +538,7 @@ func Marshal(r interface{}, serviceType, messageType, errorCode int32) ([]byte, 
 		resultSize += errorSize
 		resultBytes = append(resultBytes, errorBytes...)
 		bytes, size := AddRequestHeader(
-			serviceType, messageType, errorCode, length, resultBytes, resultSize,
+			serviceType, messageType, errorCode, OnOff, length, resultBytes, resultSize,
 		)
 		return bytes, size
 	}
@@ -588,7 +598,7 @@ func Marshal(r interface{}, serviceType, messageType, errorCode int32) ([]byte, 
 	}
 
 	bytes, size := AddRequestHeader(
-		serviceType, messageType, errorCode, length, resultBytes, resultSize,
+		serviceType, messageType, errorCode, on_off, length, resultBytes, resultSize,
 	)
 	return bytes, size
 }

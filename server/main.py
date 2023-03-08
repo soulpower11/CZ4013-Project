@@ -245,7 +245,6 @@ def reserve_seat(ip, flightID, seat):
     else:
         response = utlis.Response(error="Server Error.")
         errorCode = 1
-
     bytes, size = utlis.marshal(
         response,
         utlis.ServiceType.RESERVATION,
@@ -339,6 +338,8 @@ def main():
         requestId = data[:20]
         requestByte = data[20:]
         request, serviceType, _ = utlis.unmarshal(requestByte)
+        if request == "drop":
+            print("DROPED REQUEST")
         print(df.to_string())
 
         print(serviceType)

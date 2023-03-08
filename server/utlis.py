@@ -262,9 +262,10 @@ def decodeRequestHeader(requestHeader):
     serviceType = bytesToInt(requestHeader[0:1], byteOrdering)
     messageType = bytesToInt(requestHeader[1:2], byteOrdering)
     errorCode = bytesToInt(requestHeader[3:4], byteOrdering)
-    noOfElement = bytesToInt(requestHeader[4:], byteOrdering)
+    on_off = bytesToInt(requestHeader[4:5], byteOrdering)
+    noOfElement = bytesToInt(requestHeader[5:], byteOrdering)
 
-    return byteOrdering, serviceType, messageType, errorCode, noOfElement
+    return byteOrdering, serviceType, messageType, errorCode, on_off, noOfElement
 
 
 def decodeElementHeader(elementsByte, byteOrdering):
@@ -327,76 +328,81 @@ def decodeError(queryResponse, elementsByte, byteOrdering):
 # 4 Bytes Element Header
 # 5 Bytes Variable Header
 def unmarshal(bytesStr):
-    requestHeader = bytesStr[:8]
+    requestHeader = bytesStr[:9]
     (
         byteOrdering,
         serviceType,
         messageType,
         errorCode,
+        on_off,
         noOfElement,
     ) = decodeRequestHeader(requestHeader)
 
-    elementsByte = bytesStr[8:]
+    elementsByte = bytesStr[9:]
+    print("ON OFFF euqal to: ", on_off)
 
-    if errorCode != 0 and messageType == MessageType.REPLY:
-        queryResponse = Response()
-        queryResponse = decodeError(queryResponse, elementsByte, byteOrdering)
-        return queryResponse, serviceType, errorCode
+    if on_off == 0:
+        if errorCode != 0 and messageType == MessageType.REPLY:
+            queryResponse = Response()
+            queryResponse = decodeError(queryResponse, elementsByte, byteOrdering)
+            return queryResponse, serviceType, errorCode
 
-    if messageType == MessageType.REQUEST:
-        queryRequest = []
-        if serviceType == ServiceType.QUERY_FLIGHTID:
-            queryRequest = [QueryFlightIdRequest() for i in range(noOfElement)]
-        elif serviceType == ServiceType.QUERY_DEPARTURETIME:
-            queryRequest = [QueryDepartureTimeRequest() for i in range(noOfElement)]
-        elif serviceType == ServiceType.RESERVATION:
-            queryRequest = [ReservationRequest() for i in range(noOfElement)]
-        elif serviceType == ServiceType.MONITOR:
-            queryRequest = [MonitorRequest() for i in range(noOfElement)]
-        elif serviceType == ServiceType.CHECK_RESERVATION:
-            queryRequest = [CheckReservationRequest() for i in range(noOfElement)]
-        elif serviceType == ServiceType.CANCELLATION:
-            queryRequest = [CancellationRequest() for i in range(noOfElement)]
+        if messageType == MessageType.REQUEST:
+            queryRequest = []
+            if serviceType == ServiceType.QUERY_FLIGHTID:
+                queryRequest = [QueryFlightIdRequest() for i in range(noOfElement)]
+            elif serviceType == ServiceType.QUERY_DEPARTURETIME:
+                queryRequest = [QueryDepartureTimeRequest() for i in range(noOfElement)]
+            elif serviceType == ServiceType.RESERVATION:
+                queryRequest = [ReservationRequest() for i in range(noOfElement)]
+            elif serviceType == ServiceType.MONITOR:
+                queryRequest = [MonitorRequest() for i in range(noOfElement)]
+            elif serviceType == ServiceType.CHECK_RESERVATION:
+                queryRequest = [CheckReservationRequest() for i in range(noOfElement)]
+            elif serviceType == ServiceType.CANCELLATION:
+                queryRequest = [CancellationRequest() for i in range(noOfElement)]
 
-        queryRequest = decodeQuery(
-            queryRequest,
-            elementsByte,
-            byteOrdering,
-            noOfElement,
-            serviceType,
-            messageType,
-        )
+            queryRequest = decodeQuery(
+                queryRequest,
+                elementsByte,
+                byteOrdering,
+                noOfElement,
+                serviceType,
+                messageType,
+            )
 
-        return queryRequest, serviceType, errorCode
-    elif messageType == MessageType.REPLY:
-        queryResponse = Response()
-        if serviceType == ServiceType.QUERY_FLIGHTID:
-            queryResponse.value = [QueryFlightIdResponse() for i in range(noOfElement)]
-        elif serviceType == ServiceType.QUERY_DEPARTURETIME:
-            queryResponse.value = [
-                QueryDepartureTimeResponse() for i in range(noOfElement)
-            ]
-        elif serviceType == ServiceType.RESERVATION:
-            queryResponse.value = [ReservationResponse() for i in range(noOfElement)]
-        elif serviceType == ServiceType.MONITOR:
-            queryResponse.value = [MonitorResponse() for i in range(noOfElement)]
-        elif serviceType == ServiceType.CHECK_RESERVATION:
-            queryResponse.value = [
-                CheckReservationRequest() for i in range(noOfElement)
-            ]
-        elif serviceType == ServiceType.CANCELLATION:
-            queryResponse.value = [CancellationResponse() for i in range(noOfElement)]
+            return queryRequest, serviceType, errorCode
+        elif messageType == MessageType.REPLY:
+            queryResponse = Response()
+            if serviceType == ServiceType.QUERY_FLIGHTID:
+                queryResponse.value = [QueryFlightIdResponse() for i in range(noOfElement)]
+            elif serviceType == ServiceType.QUERY_DEPARTURETIME:
+                queryResponse.value = [
+                    QueryDepartureTimeResponse() for i in range(noOfElement)
+                ]
+            elif serviceType == ServiceType.RESERVATION:
+                queryResponse.value = [ReservationResponse() for i in range(noOfElement)]
+            elif serviceType == ServiceType.MONITOR:
+                queryResponse.value = [MonitorResponse() for i in range(noOfElement)]
+            elif serviceType == ServiceType.CHECK_RESERVATION:
+                queryResponse.value = [
+                    CheckReservationRequest() for i in range(noOfElement)
+                ]
+            elif serviceType == ServiceType.CANCELLATION:
+                queryResponse.value = [CancellationResponse() for i in range(noOfElement)]
 
-        queryResponse.value = decodeQuery(
-            queryResponse.value,
-            elementsByte,
-            byteOrdering,
-            noOfElement,
-            serviceType,
-            messageType,
-        )
+            queryResponse.value = decodeQuery(
+                queryResponse.value,
+                elementsByte,
+                byteOrdering,
+                noOfElement,
+                serviceType,
+                messageType,
+            )
 
-        return queryResponse, serviceType, errorCode
+            return queryResponse, serviceType, errorCode
+    elif on_off == 1:
+        return "drop"
 
 
 def marshal(r, serviceType, messageType, errorCode):
