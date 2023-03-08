@@ -334,7 +334,7 @@ def cancel_reservation(ip, flightID):
     return bytes, size
 
 
-def main():
+def at_most_once():
     global s
     s = start_server()
     load_flight_info()
@@ -405,7 +405,7 @@ def main():
                 s.sendto(replyBytes, address)
 
 
-def main2():
+def at_least_once():
     global s
     s = start_server()
     load_flight_info()
@@ -468,6 +468,6 @@ if __name__ == "__main__":
         exit(1)
 
     if choice == "1":
-        main()
+        at_most_once()
     elif choice == "2":
-        main2()
+        at_least_once()
