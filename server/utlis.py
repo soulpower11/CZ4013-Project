@@ -3,6 +3,7 @@ import time
 from dataclasses import dataclass, fields
 import string
 import sys
+import re
 from serviceType import (
     ByteOrdering,
     DataType,
@@ -126,42 +127,52 @@ def getDataType(variable):
         return DataType.TIME_TYPE
 
 
-# IP+Time 20 Bytes
+# IP 15 Bytes
+# Time 8 Bytes
 def addRequestID(ip, time, bytes, size):
-    resultBytes = bytearray(20 + size)
+    resultBytes = bytearray(23 + size)
 
     ipBytes, ipSize = toBytes(ip)
     timeBytes, timeSize = toBytes(time)
 
     resultBytes[0:ipSize] = ipBytes
-    resultBytes[ipSize : ipSize + timeSize] = timeBytes
-    resultBytes[20 : 20 + size] = bytes[:size]
+    if ipSize != 15:
+        padding = bytearray(15 - ipSize)
+        resultBytes[ipSize:15] = padding
 
-    return resultBytes, 20 + size
+    resultBytes[15 : 15 + timeSize] = timeBytes
+    resultBytes[23 : 23 + size] = bytes[:size]
+
+    return resultBytes, 23 + size
 
 
 # Service Type 1 Byte
 # Message Type 1 Byte
 # Byte Ordering 1 Byte
 # Error Code 1 Byte
+# Time Out 1 Byte
 # No. of element 4 Byte
-def addRequestHeader(serviceType, messageType, errorCode, noOfElement, bytes, size):
-    resultBytes = bytearray(8 + size)
+def addRequestHeader(
+    serviceType, messageType, errorCode, timeOut, noOfElement, bytes, size
+):
+    resultBytes = bytearray(9 + size)
 
     serviceBytes = intToByte(serviceType)
     messageBytes = intToByte(messageType)
     byteOrderingBytes = intToByte(getEndianness())
     errorCodeBytes = intToByte(errorCode)
+    timeOutBytes = intToByte(timeOut)
     noOfElementBytes, noOfElementSize = toBytes(noOfElement)
 
     resultBytes[0:1] = serviceBytes
     resultBytes[1:2] = messageBytes
     resultBytes[2:3] = byteOrderingBytes
     resultBytes[3:4] = errorCodeBytes
-    resultBytes[4 : 4 + noOfElementSize] = noOfElementBytes
-    resultBytes[8 : 8 + size] = bytes[:size]
+    resultBytes[4:5] = timeOutBytes
+    resultBytes[5 : 5 + noOfElementSize] = noOfElementBytes
+    resultBytes[9 : 9 + size] = bytes[:size]
 
-    return resultBytes, 8 + size
+    return resultBytes, 9 + size
 
 
 # Length of Element 4 Byte
@@ -253,6 +264,12 @@ def setField(dataClass, index, value, serviceType, messageType):
     return dataClass
 
 
+def decodeIPFromRequestId(requestId):
+    ip = bytesToString(requestId[0:15])
+
+    return re.sub(r"[^.\d]+", "", ip)
+
+
 def decodeRequestHeader(requestHeader):
     byteOrdering = (
         "big"
@@ -262,9 +279,10 @@ def decodeRequestHeader(requestHeader):
     serviceType = bytesToInt(requestHeader[0:1], byteOrdering)
     messageType = bytesToInt(requestHeader[1:2], byteOrdering)
     errorCode = bytesToInt(requestHeader[3:4], byteOrdering)
-    noOfElement = bytesToInt(requestHeader[4:], byteOrdering)
+    timeOut = bytesToInt(requestHeader[4:5], byteOrdering)
+    noOfElement = bytesToInt(requestHeader[5:], byteOrdering)
 
-    return byteOrdering, serviceType, messageType, errorCode, noOfElement
+    return byteOrdering, serviceType, messageType, errorCode, timeOut, noOfElement
 
 
 def decodeElementHeader(elementsByte, byteOrdering):
@@ -327,21 +345,22 @@ def decodeError(queryResponse, elementsByte, byteOrdering):
 # 4 Bytes Element Header
 # 5 Bytes Variable Header
 def unmarshal(bytesStr):
-    requestHeader = bytesStr[:8]
+    requestHeader = bytesStr[:9]
     (
         byteOrdering,
         serviceType,
         messageType,
         errorCode,
+        timeOut,
         noOfElement,
     ) = decodeRequestHeader(requestHeader)
 
-    elementsByte = bytesStr[8:]
+    elementsByte = bytesStr[9:]
 
     if errorCode != 0 and messageType == MessageType.REPLY:
         queryResponse = Response()
         queryResponse = decodeError(queryResponse, elementsByte, byteOrdering)
-        return queryResponse, serviceType, errorCode
+        return queryResponse, serviceType, errorCode, timeOut
 
     if messageType == MessageType.REQUEST:
         queryRequest = []
@@ -367,7 +386,7 @@ def unmarshal(bytesStr):
             messageType,
         )
 
-        return queryRequest, serviceType, errorCode
+        return queryRequest, serviceType, errorCode, timeOut
     elif messageType == MessageType.REPLY:
         queryResponse = Response()
         if serviceType == ServiceType.QUERY_FLIGHTID:
@@ -382,7 +401,7 @@ def unmarshal(bytesStr):
             queryResponse.value = [MonitorResponse() for i in range(noOfElement)]
         elif serviceType == ServiceType.CHECK_RESERVATION:
             queryResponse.value = [
-                CheckReservationRequest() for i in range(noOfElement)
+                CheckReservationResponse() for i in range(noOfElement)
             ]
         elif serviceType == ServiceType.CANCELLATION:
             queryResponse.value = [CancellationResponse() for i in range(noOfElement)]
@@ -396,10 +415,10 @@ def unmarshal(bytesStr):
             messageType,
         )
 
-        return queryResponse, serviceType, errorCode
+        return queryResponse, serviceType, errorCode, timeOut
 
 
-def marshal(r, serviceType, messageType, errorCode):
+def marshal(r, serviceType, messageType, errorCode, timeOut):
     length = 1
     resultSize = 0
     resultBytes = bytearray()
@@ -414,7 +433,13 @@ def marshal(r, serviceType, messageType, errorCode):
         resultSize += errorSize
         resultBytes.extend(errorBytes)
         bytes, size = addRequestHeader(
-            serviceType, messageType, errorCode, length, resultBytes, resultSize
+            serviceType,
+            messageType,
+            errorCode,
+            timeOut,
+            length,
+            resultBytes,
+            resultSize,
         )
         return bytes, size
 
@@ -461,6 +486,6 @@ def marshal(r, serviceType, messageType, errorCode):
             resultBytes.extend(tempBytes)
 
     bytes, size = addRequestHeader(
-        serviceType, messageType, errorCode, length, resultBytes, resultSize
+        serviceType, messageType, errorCode, timeOut, length, resultBytes, resultSize
     )
     return bytes, size

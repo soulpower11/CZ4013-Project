@@ -16,43 +16,21 @@ port = 8080
 s = None
 
 reservation = {}
-# monitorCache = {}
 monitorCache = []
+requestIds = []
 
 
-# def set_cache(key, value, timeout):
-#     """Adds a key-value pair to the cache with a timeout."""
-#     monitorCache[key] = value
-#     # Create a new thread that waits for the timeout and deletes the key from the cache.
-#     t = threading.Timer(timeout, delete_cache, args=[key])
-#     t.start()
-
-
-# def get_cache(key):
-#     """Retrieves a value from the cache."""
-#     return monitorCache.get(key)
-
-
-# def delete_cache(key):
-#     """Deletes a key from the cache."""
-#     if key in monitorCache:
-#         del monitorCache[key]
-
-
-def get_cache(key):
-    # Check if the key is present in the cache and not expired
-    if monitorCache[key]["expiry"] > time.time():
-        return monitorCache[key]["value"]
-    elif monitorCache[key]["expiry"] <= time.time():
-        del monitorCache[key]
+def get_cache(index):
+    if monitorCache[index]["expiry"] > time.time():
+        return monitorCache[index]["value"]
+    elif monitorCache[index]["expiry"] <= time.time():
+        del monitorCache[index]
         return None
     else:
         return None
 
 
-def set_cache(key, value, expiry_time):
-    # Add the key-value pair to the cache with the expiry time
-    # monitorCache[key] = {"value": value, "expiry": time.time() + expiry_time}
+def set_cache(value, expiry_time):
     monitorCache.append({"value": value, "expiry": time.time() + expiry_time})
 
 
@@ -66,8 +44,7 @@ def monitor_flight(address, flightID, requestId, monitorInterval):
     selected_flights = selected_flights.reset_index()
 
     if len(selected_flights.index == 0):
-        length = len(monitorCache)
-        set_cache(length, {flightID: (address, requestId)}, monitorInterval * 60)
+        set_cache({flightID: (address, requestId)}, monitorInterval * 60)
         response = utlis.Response(
             [utlis.MonitorResponse("Monitoring started succesfully!")]
         )
@@ -84,6 +61,7 @@ def monitor_flight(address, flightID, requestId, monitorInterval):
         utlis.ServiceType.MONITOR,
         utlis.MessageType.REPLY,
         errorCode,
+        0,
     )
     return bytes, size
 
@@ -122,6 +100,7 @@ def send_updates(flightID):
                     ),
                     utlis.ServiceType.MONITOR,
                     utlis.MessageType.REPLY,
+                    0,
                     0,
                 )
                 replyBytes = bytearray()
@@ -174,6 +153,7 @@ def search_flights(source, destination):
         utlis.ServiceType.QUERY_FLIGHTID,
         utlis.MessageType.REPLY,
         errorCode,
+        0,
     )
     return bytes, size
 
@@ -208,6 +188,7 @@ def get_flights_details(flightID):
         utlis.ServiceType.QUERY_DEPARTURETIME,
         utlis.MessageType.REPLY,
         errorCode,
+        0,
     )
     return bytes, size
 
@@ -254,6 +235,7 @@ def reserve_seat(ip, flightID, seat):
         utlis.ServiceType.RESERVATION,
         utlis.MessageType.REPLY,
         errorCode,
+        0,
     )
     return bytes, size
 
@@ -282,6 +264,7 @@ def check_reservation(ip, flightID):
         utlis.ServiceType.CHECK_RESERVATION,
         utlis.MessageType.REPLY,
         errorCode,
+        0,
     )
     return bytes, size
 
@@ -325,6 +308,7 @@ def cancel_reservation(ip, flightID):
         utlis.ServiceType.CANCELLATION,
         utlis.MessageType.REPLY,
         errorCode,
+        0,
     )
     return bytes, size
 
@@ -337,14 +321,18 @@ def main():
     while True:
         print("####### Server is listening #######")
         data, address = s.recvfrom(4096)
-        print(data)
-        print(address[0])
-        requestId = data[:20]
-        requestByte = data[20:]
-        request, serviceType, _ = utlis.unmarshal(requestByte)
-        print(df.to_string())
+        requestId = data[:23]
+        ip = utlis.decodeIPFromRequestId(requestId)
+        print("Data:", data)
+        print("IP:", ip)
+        print(len(ip))
 
-        print(serviceType)
+        requestByte = data[23:]
+        request, serviceType, _, timeOut = utlis.unmarshal(requestByte)
+
+        print(df.to_string())
+        print("Service Type:", serviceType)
+        print("Time Out:", timeOut)
 
         if serviceType == 0:
             print(
@@ -360,22 +348,23 @@ def main():
         elif serviceType == 2:
             flightID = request[0].flightId
             Seatnum = request[0].noOfSeats
-            bytes, size = reserve_seat(address[0], flightID, Seatnum)
+            bytes, size = reserve_seat(ip, flightID, Seatnum)
         elif serviceType == 3:
             flightID = request[0].flightId
             monitorInterval = request[0].monitorInterval
             bytes, size = monitor_flight(address, flightID, requestId, monitorInterval)
         elif serviceType == 4:
             flightID = request[0].flightId
-            bytes, size = check_reservation(address[0], flightID)
+            bytes, size = check_reservation(ip, flightID)
         elif serviceType == 5:
             flightID = request[0].flightId
-            bytes, size = cancel_reservation(address[0], flightID)
+            bytes, size = cancel_reservation(ip, flightID)
 
-        replyBytes = bytearray()
-        replyBytes.extend(requestId)
-        replyBytes.extend(bytes)
-        s.sendto(replyBytes, address)
+        if not timeOut:
+            replyBytes = bytearray()
+            replyBytes.extend(requestId)
+            replyBytes.extend(bytes)
+            s.sendto(replyBytes, address)
         # break
 
 

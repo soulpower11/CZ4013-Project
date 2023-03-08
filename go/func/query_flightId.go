@@ -2,14 +2,14 @@ package functions
 
 import (
 	"fmt"
-	"os"
+	"log"
 	"time"
 
 	. "github.com/soulpower11/CZ4031-Project/const"
 	"github.com/soulpower11/CZ4031-Project/utlis"
 )
 
-func QueryFlightId() {
+func QueryFlightId(timeOut int32) {
 	source := utlis.TextPrompt("Source:", GetCountryNameValidate())
 	if source == nil {
 		fmt.Println("Exit Query Flight Id")
@@ -22,31 +22,27 @@ func QueryFlightId() {
 		return
 	}
 
-	conn, ip := connect()
+	conn, ip, err := connect()
+	if err != nil {
+		log.Print("Connecting to server failed:", err.Error())
+		return
+	}
 	defer conn.Close()
 
 	send := QueryFlightIdRequest{
 		Source:      *source,
 		Destination: *destination,
 	}
-	bytes_, size := utlis.Marshal(send, int32(QUERY_FLIGHTID), int32(REQUEST), int32(0))
+	bytes_, size := utlis.Marshal(send, int32(QUERY_FLIGHTID), int32(REQUEST), int32(0), timeOut)
 	bytes_, size = utlis.AddRequestID(ip, time.Now(), bytes_, size)
 
-	_, err := conn.Write(bytes_)
+	received, err := sendToServer(conn, bytes_, timeOut)
 	if err != nil {
-		println("Write data failed:", err.Error())
-		os.Exit(1)
+		log.Print(err.Error())
+		return
 	}
 
-	received := make([]byte, 1024)
-	_, err = conn.Read(received)
-
-	if err != nil {
-		println("Read data failed:", err.Error())
-		os.Exit(1)
-	}
-
-	_, response, _, errorCode := utlis.Unmarshal(received[20:])
+	_, response, _, errorCode, _ := utlis.Unmarshal(received[23:])
 	if errorCode == 0 {
 		flightIds := []int32{}
 		for _, res := range response.Value {

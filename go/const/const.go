@@ -4,6 +4,16 @@ import (
 	"time"
 )
 
+const (
+	// HOST = "192.9.175.59"
+	HOST       = "localhost"
+	CLIENTHOST = "localhost"
+	PORT       = "8080"
+	TYPE       = "udp"
+	MAXRETRIES = 5
+	DEADLINE   = 10 * time.Second
+)
+
 type DataType int32
 
 const (

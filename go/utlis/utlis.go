@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"math"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -111,42 +112,57 @@ func GetDataType[T any](variable T) int32 {
 	return -1
 }
 
-// IP+Time 20 Bytes
+// IP 15 Bytes
+// Time 8 Bytes
 func AddRequestID(ip string, time time.Time, bytes []byte, size int32) ([]byte, int32) {
-	resultBytes := make([]byte, 20+size)
+	resultBytes := make([]byte, 23+size)
 
 	ipBytes, ipSize := ToBytes(ip)
 	timeBytes, timeSize := ToBytes(time)
 
 	copy(resultBytes[0:ipSize], ipBytes)
-	copy(resultBytes[ipSize:ipSize+timeSize], timeBytes)
-	copy(resultBytes[20:20+size], bytes[:size])
+	if ipSize != int32(15) {
+		padding := make([]byte, 15-ipSize)
+		copy(resultBytes[ipSize:15], padding)
+	}
+	copy(resultBytes[15:15+timeSize], timeBytes)
+	copy(resultBytes[23:23+size], bytes[:size])
 
-	return resultBytes, 20 + size
+	return resultBytes, 23 + size
+}
+
+func TurnTimeOutOff(bytes_ []byte) []byte {
+	timeOutBytes := Int32ToByte(0)
+
+	copy(bytes_[27:28], timeOutBytes)
+	return bytes_
 }
 
 // Service Type 1 Byte
 // Message Type 1 Byte
 // Byte Ordering 1 Byte
 // Error Code 1 Byte
+// Time Out 1 Byte
 // No. of element 4 Byte
-func AddRequestHeader(serviceType, messageType, errorCode, noOfElement int32, bytes []byte, size int32) ([]byte, int32) {
-	resultBytes := make([]byte, 8+size)
+func AddRequestHeader(serviceType, messageType, errorCode, timeOut, noOfElement int32, bytes []byte, size int32) ([]byte, int32) {
+	resultBytes := make([]byte, 9+size)
 
 	serviceBytes := Int32ToByte(serviceType)
 	messageBytes := Int32ToByte(messageType)
 	byteOrderingBytes := Int32ToByte(GetEndianness())
 	errorCodeBytes := Int32ToByte(errorCode)
+	timeOutBytes := Int32ToByte(timeOut)
 	noOfElementBytes, noOfElementSize := ToBytes(noOfElement)
 
 	copy(resultBytes[0:1], serviceBytes)
 	copy(resultBytes[1:2], messageBytes)
 	copy(resultBytes[2:3], byteOrderingBytes)
 	copy(resultBytes[3:4], errorCodeBytes)
-	copy(resultBytes[4:4+noOfElementSize], noOfElementBytes)
-	copy(resultBytes[8:8+size], bytes[:size])
+	copy(resultBytes[4:5], timeOutBytes)
+	copy(resultBytes[5:5+noOfElementSize], noOfElementBytes)
+	copy(resultBytes[9:9+size], bytes[:size])
 
-	return resultBytes, 8 + size
+	return resultBytes, 9 + size
 }
 
 // Length of Element 4 Byte
@@ -298,14 +314,22 @@ func SetField(dataClass interface{}, index int32, value interface{}, serviceType
 	return dataClass
 }
 
-func DecodeRequestHeader(requestHeader []byte) (int32, int32, int32, int32, int32) {
+func decodeIPFromRequestId(requestId []byte) string {
+	ip := BytesToString(requestId[0:15])
+	re := regexp.MustCompile(`[^.\d]+`)
+
+	return re.ReplaceAllString(ip, "")
+}
+
+func DecodeRequestHeader(requestHeader []byte) (int32, int32, int32, int32, int32, int32) {
 	byteOrdering := ByteToInt32(requestHeader[2:3])
 	serviceType := ByteToInt32(requestHeader[0:1])
 	messageType := ByteToInt32(requestHeader[1:2])
 	errorCode := ByteToInt32(requestHeader[3:4])
-	noOfElement := BytesToInt32(requestHeader[4:], byteOrdering)
+	timeOut := ByteToInt32(requestHeader[4:5])
+	noOfElement := BytesToInt32(requestHeader[5:], byteOrdering)
 
-	return byteOrdering, serviceType, messageType, errorCode, noOfElement
+	return byteOrdering, serviceType, messageType, errorCode, timeOut, noOfElement
 }
 
 func DecodeElementHeader(elementsByte []byte, byteOrdering int32) (int32, []byte) {
@@ -397,16 +421,16 @@ func DecodeError(queryResponse Response, elementsByte []byte, byteOrdering int32
 // 8 Bytes Request Header
 // 4 Bytes Element Header
 // 5 Bytes Variable Header
-func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Response, serviceType int32, errorCode int32) {
-	requestHeader := bytesStr[:8]
-	byteOrdering, serviceType, messageType, errorCode, noOfElement := DecodeRequestHeader(requestHeader)
+func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Response, serviceType, errorCode, timeOut int32) {
+	requestHeader := bytesStr[:9]
+	byteOrdering, serviceType, messageType, errorCode, timeOut, noOfElement := DecodeRequestHeader(requestHeader)
 
-	elementsByte := bytesStr[8:]
+	elementsByte := bytesStr[9:]
 
 	if errorCode != 0 && messageType == int32(REPLY) {
 		queryResponse := Response{}
 		queryResponse = DecodeError(queryResponse, elementsByte, byteOrdering)
-		return nil, queryResponse, serviceType, errorCode
+		return nil, queryResponse, serviceType, errorCode, timeOut
 	}
 
 	if messageType == int32(REQUEST) {
@@ -459,7 +483,7 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 			messageType,
 		)
 
-		return queryRequest, Response{}, serviceType, errorCode
+		return queryRequest, Response{}, serviceType, errorCode, timeOut
 	} else if messageType == int32(REPLY) {
 		queryResponse := Response{}
 		switch serviceType {
@@ -510,12 +534,12 @@ func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Respo
 			messageType,
 		)
 
-		return nil, queryResponse, serviceType, errorCode
+		return nil, queryResponse, serviceType, errorCode, timeOut
 	}
-	return nil, Response{}, serviceType, errorCode
+	return nil, Response{}, serviceType, errorCode, timeOut
 }
 
-func Marshal(r interface{}, serviceType, messageType, errorCode int32) ([]byte, int32) {
+func Marshal(r interface{}, serviceType, messageType, errorCode, timeOut int32) ([]byte, int32) {
 	length := int32(1)
 	resultSize := int32(0)
 	resultBytes := []byte{}
@@ -528,7 +552,7 @@ func Marshal(r interface{}, serviceType, messageType, errorCode int32) ([]byte, 
 		resultSize += errorSize
 		resultBytes = append(resultBytes, errorBytes...)
 		bytes, size := AddRequestHeader(
-			serviceType, messageType, errorCode, length, resultBytes, resultSize,
+			serviceType, messageType, errorCode, timeOut, length, resultBytes, resultSize,
 		)
 		return bytes, size
 	}
@@ -588,7 +612,7 @@ func Marshal(r interface{}, serviceType, messageType, errorCode int32) ([]byte, 
 	}
 
 	bytes, size := AddRequestHeader(
-		serviceType, messageType, errorCode, length, resultBytes, resultSize,
+		serviceType, messageType, errorCode, timeOut, length, resultBytes, resultSize,
 	)
 	return bytes, size
 }
