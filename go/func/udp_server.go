@@ -3,8 +3,10 @@ package functions
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"time"
 
 	. "github.com/soulpower11/CZ4031-Project/const"
@@ -12,17 +14,20 @@ import (
 )
 
 func getClientIp() (string, error) {
-	addrs, err := net.InterfaceAddrs()
+	resp, err := http.Get("https://api.ipify.org")
 	if err != nil {
+		log.Print("Error getting IP address:", err)
 		return "", err
 	}
-	for _, addr := range addrs {
-		ipnet, ok := addr.(*net.IPNet)
-		if ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-			return ipnet.IP.String(), nil
-		}
+	defer resp.Body.Close()
+
+	ip, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Print("Error reading IP address:", err)
+		return "", err
 	}
-	return "", errors.New("IP not found")
+
+	return string(ip), nil
 }
 
 func connect() (*net.UDPConn, string, error) {
@@ -38,9 +43,13 @@ func connect() (*net.UDPConn, string, error) {
 		return nil, "", err
 	}
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	ip, err := getClientIp()
+	if err != nil {
+		log.Print("Error getting IP:", err)
+		return nil, "", err
+	}
 
-	return conn, localAddr.IP.String(), nil
+	return conn, ip, nil
 }
 
 func listener() (*net.UDPConn, string, error) {
@@ -51,23 +60,12 @@ func listener() (*net.UDPConn, string, error) {
 		return nil, "", err
 	}
 
-	// udpServer, err := net.ResolveUDPAddr(TYPE, fmt.Sprintf("%s:%s", HOST, PORT))
-	// if err != nil {
-	// 	log.Print("ResolveUDPAddr failed:", err.Error())
-	// 	return nil, "", err
-	// }
+	ip, err := getClientIp()
+	if err != nil {
+		log.Print("Error getting IP:", err)
+		return nil, "", err
+	}
 
-	// conn2, err := net.DialUDP(TYPE, nil, udpServer)
-	// if err != nil {
-	// 	log.Print("Listen failed:", err.Error())
-	// 	return nil, "", err
-	// }
-	// defer conn2.Close()
-	// localAddr := conn2.LocalAddr().(*net.UDPAddr)
-
-	// return conn, localAddr.IP.String(), nil
-
-	ip, _ := getClientIp()
 	return conn, ip, nil
 }
 

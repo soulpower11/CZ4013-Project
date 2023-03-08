@@ -6,9 +6,6 @@ import utlis
 import csv
 import pandas as pd
 
-# Use IP from Request ID for reservation
-# the one many thing
-
 df = None
 ip = "127.0.0.1"
 # ip = "10.0.0.12"
@@ -17,7 +14,31 @@ s = None
 
 reservation = {}
 monitorCache = []
-requestIds = []
+
+requestIds = set()
+responseCache = {}
+
+
+def get_response_cache(key):
+    if responseCache[key]["expiry"] > time.time():
+        return responseCache[key]["value"]
+    elif responseCache[key]["expiry"] <= time.time():
+        del responseCache[key]
+        return None
+    else:
+        return None
+
+
+def set_response_cache(key, value, expiry_time):
+    responseCache[key] = {"value": value, "expiry": time.time() + expiry_time}
+
+
+def check_duplicated_requestIds(requestId):
+    if requestId not in requestIds:
+        requestIds.add(requestId)
+        return False
+    else:
+        return True
 
 
 def get_cache(index):
@@ -327,6 +348,77 @@ def main():
         print("IP:", ip)
         print(len(ip))
 
+        duplicated = check_duplicated_requestIds(requestId)
+        requestByte = data[23:]
+        request, serviceType, _, timeOut = utlis.unmarshal(requestByte)
+
+        print(df.to_string())
+        print("Service Type:", serviceType)
+        print("Time Out:", timeOut)
+
+        if not duplicated:
+            if serviceType == 0:
+                print(
+                    "\nServer received: ",
+                    request[0].source,
+                    request[0].destination,
+                    "\n",
+                )
+                source = request[0].source.lower()
+                destination = request[0].destination.lower()
+                print(source, destination)
+                bytes, size = search_flights(source, destination)
+            elif serviceType == 1:
+                flightId = request[0].flightId
+                bytes, size = get_flights_details(flightId)
+            elif serviceType == 2:
+                flightID = request[0].flightId
+                Seatnum = request[0].noOfSeats
+                bytes, size = reserve_seat(ip, flightID, Seatnum)
+            elif serviceType == 3:
+                flightID = request[0].flightId
+                monitorInterval = request[0].monitorInterval
+                bytes, size = monitor_flight(
+                    address, flightID, requestId, monitorInterval
+                )
+            elif serviceType == 4:
+                flightID = request[0].flightId
+                bytes, size = check_reservation(ip, flightID)
+            elif serviceType == 5:
+                flightID = request[0].flightId
+                bytes, size = cancel_reservation(ip, flightID)
+
+            set_response_cache(requestId, bytes, 5 * 60)
+
+            if not timeOut:
+                replyBytes = bytearray()
+                replyBytes.extend(requestId)
+                replyBytes.extend(bytes)
+                s.sendto(replyBytes, address)
+        else:
+            bytes = get_response_cache(requestId)
+
+            if not timeOut:
+                replyBytes = bytearray()
+                replyBytes.extend(requestId)
+                replyBytes.extend(bytes)
+                s.sendto(replyBytes, address)
+
+
+def main2():
+    global s
+    s = start_server()
+    load_flight_info()
+
+    while True:
+        print("####### Server is listening #######")
+        data, address = s.recvfrom(4096)
+        requestId = data[:23]
+        ip = utlis.decodeIPFromRequestId(requestId)
+        print("Data:", data)
+        print("IP:", ip)
+        print(len(ip))
+
         requestByte = data[23:]
         request, serviceType, _, timeOut = utlis.unmarshal(requestByte)
 
@@ -369,4 +461,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) == 2:
+        choice = sys.argv[1]
+    else:
+        print("Run like : python3 main.py <choice>")
+        exit(1)
+
+    if choice == "1":
+        main()
+    elif choice == "2":
+        main2()
