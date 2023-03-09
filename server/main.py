@@ -16,17 +16,41 @@ reservation = {}
 monitorCache = []
 
 requestIds = set()
+requestExpiry = {}
 responseCache = {}
+
+def start_cache_cleaner(interval):
+    print("CLEANING")
+    def clean_cache():
+        while True:
+            expired_keys = []
+            for key in responseCache:
+                if responseCache[key]["expiry"] <= time.time():
+                    expired_keys.append(key)
+            for key in expired_keys:
+                del responseCache[key]
+            time.sleep(interval)
+    t = threading.Thread(target=clean_cache)
+    t.daemon = True
+    t.start()
+
+start_cache_cleaner(60)  # Run every 60 seconds
 
 
 def get_response_cache(key):
-    if responseCache[key]["expiry"] > time.time():
+    if key in responseCache:
         return responseCache[key]["value"]
-    elif responseCache[key]["expiry"] <= time.time():
-        del responseCache[key]
-        return None
     else:
         return None
+    
+# def get_response_cache(key):
+#     if responseCache[key]["expiry"] > time.time():
+#         return responseCache[key]["value"]
+#     elif responseCache[key]["expiry"] <= time.time():
+#         del responseCache[key]
+#         return None
+#     else:
+#         return None
 
 
 def set_response_cache(key, value, expiry_time):
@@ -34,8 +58,14 @@ def set_response_cache(key, value, expiry_time):
 
 
 def check_duplicated_requestIds(requestId):
+    # Remove expired request IDs from the set.
+    for expired_id in [k for k, v in requestExpiry.items() if v <= time.time()]:
+        requestIds.remove(expired_id)
+        del requestExpiry[expired_id]
+
     if requestId not in requestIds:
         requestIds.add(requestId)
+        requestExpiry[requestId] = time.time() + 2 * 60
         return False
     else:
         return True
@@ -341,10 +371,12 @@ def at_most_once():
 
     while True:
         print("####### Server is listening #######")
+        print("Current Stored Respond: \n", responseCache)
+        print("Current Stored Address ID: \n", requestIds)
         data, address = s.recvfrom(4096)
         requestId = data[:23]
         ip = utlis.decodeIPFromRequestId(requestId)
-        print("Data:", data)
+        #print("Data:", data)
         print("IP:", ip)
         print(len(ip))
 
@@ -352,8 +384,8 @@ def at_most_once():
         requestByte = data[23:]
         request, serviceType, _, packetLoss = utlis.unmarshal(requestByte)
 
-        print(df.to_string())
-        print("Service Type:", serviceType)
+        #print(df.to_string())
+        #print("Service Type:", serviceType)
         print("Time Out:", packetLoss)
 
         if not duplicated:
@@ -388,7 +420,7 @@ def at_most_once():
                 flightID = request[0].flightId
                 bytes, size = cancel_reservation(ip, flightID)
 
-            set_response_cache(requestId, bytes, 5 * 60)
+            set_response_cache(requestId, bytes, 2 * 60)
 
             if not packetLoss:
                 replyBytes = bytearray()
