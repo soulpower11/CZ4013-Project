@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 
+	. "github.com/jedib0t/go-pretty/text"
 	functions "github.com/soulpower11/CZ4031-Project/func"
 	"github.com/soulpower11/CZ4031-Project/utlis"
 )
 
 func main() {
-	fmt.Println("----- Welcome to our airplane service -----")
+	fmt.Printf("%s\n", FgWhite.Sprintf("%s", FormatTitle.Apply("----- Welcome to our airplane service -----")))
+	// fmt.Println("----- Welcome to our airplane service -----")
 	exit := false
 	packetLoss := int32(0)
 
