@@ -10,13 +10,13 @@ import (
 )
 
 func QueryFlightId(packetLoss int32) {
-	source := utlis.TextPrompt("Source:", GetCountryNameValidate())
+	source := utlis.TextPrompt("Enter the source:", GetCountryNameValidate())
 	if source == nil {
 		fmt.Println("Exit Query Flight Id")
 		return
 	}
 
-	destination := utlis.TextPrompt("destination:", GetCountryNameValidate())
+	destination := utlis.TextPrompt("Enter the destination:", GetCountryNameValidate())
 	if destination == nil {
 		fmt.Println("Exit Query Flight Id")
 		return

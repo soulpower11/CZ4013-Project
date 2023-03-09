@@ -10,13 +10,13 @@ import (
 )
 
 func Reservation(packetLoss int32) {
-	flightId := utlis.TextPrompt("Flight ID:", GetFlightIdValidate())
+	flightId := utlis.TextPrompt("Enter the Flight ID:", GetFlightIdValidate())
 	if flightId == nil {
 		fmt.Println("Exit Reservation")
 		return
 	}
 
-	noOfSeats := utlis.TextPrompt("No. Of Seats:", GetNoOfSeatsValidate())
+	noOfSeats := utlis.TextPrompt("Enter the No. Of Seats:", GetNoOfSeatsValidate())
 	if noOfSeats == nil {
 		fmt.Println("Exit Reservation")
 		return

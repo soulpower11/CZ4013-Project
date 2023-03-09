@@ -10,7 +10,7 @@ import (
 )
 
 func CheckReservation(packetLoss int32) {
-	flightId := utlis.TextPrompt("Flight ID:", GetFlightIdValidate())
+	flightId := utlis.TextPrompt("Enter your Flight ID:", GetFlightIdValidate())
 	if flightId == nil {
 		fmt.Println("Exit Check Reservation")
 		return
@@ -38,7 +38,11 @@ func CheckReservation(packetLoss int32) {
 	_, response, _, errorCode, _ := utlis.Unmarshal(received[23:])
 	if errorCode == 0 {
 		seatsReserved := response.Value[0].(CheckReservationResponse).SeatsReserved
-		fmt.Printf("%d seats is reserved for Flight ID %s\n", seatsReserved, *flightId)
+		word := "seats are"
+		if seatsReserved == 1 {
+			word = "seat is"
+		}
+		fmt.Printf("%d %s reserved for Flight ID %s\n", seatsReserved, word, *flightId)
 	} else {
 		println(response.Error)
 	}

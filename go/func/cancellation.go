@@ -10,7 +10,7 @@ import (
 )
 
 func Cancellation(packetLoss int32) {
-	flightId := utlis.TextPrompt("Flight ID:", GetFlightIdValidate())
+	flightId := utlis.TextPrompt("Enter your Flight ID:", GetFlightIdValidate())
 	if flightId == nil {
 		fmt.Println("Exit Cancellation")
 		return

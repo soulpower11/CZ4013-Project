@@ -10,7 +10,7 @@ import (
 )
 
 func QueryDepartureTime(packetLoss int32) {
-	flightId := utlis.TextPrompt("Flight ID:", GetFlightIdValidate())
+	flightId := utlis.TextPrompt("Enter the Flight ID:", GetFlightIdValidate())
 	if flightId == nil {
 		fmt.Println("Exit Query Departure Time")
 		return

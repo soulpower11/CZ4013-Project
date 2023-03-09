@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jedib0t/go-pretty/text"
 	. "github.com/soulpower11/CZ4031-Project/const"
 	"github.com/soulpower11/CZ4031-Project/utlis"
 )
@@ -90,7 +91,9 @@ func sendToServer(conn *net.UDPConn, bytes_ []byte, packetLoss int32) ([]byte, e
 		}
 
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			fmt.Printf("Retrying No. %d\n", i+1)
+			msg := fmt.Sprintf("Retrying. No.%d", i+1)
+			fmt.Printf("%s\n", text.FgRed.Sprintf("%s", msg))
+			// fmt.Printf("Retrying. No.%d\n", i+1)
 			if i == MAXRETRIES-1 {
 				return nil, errors.New("Max retries reached!")
 			}
@@ -130,7 +133,7 @@ func sendToServerAsListener(conn *net.UDPConn, bytes_ []byte, packetLoss int32) 
 		}
 
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			fmt.Printf("Retrying No. %d\n", i+1)
+			fmt.Printf("Retrying. No.%d\n", i+1)
 			if i == MAXRETRIES-1 {
 				return nil, nil, errors.New("Max retries reached!")
 			}

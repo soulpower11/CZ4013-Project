@@ -11,13 +11,13 @@ import (
 )
 
 func MonitorFlight(packetLoss int32) {
-	flightId := utlis.TextPrompt("Flight ID:", GetFlightIdValidate())
+	flightId := utlis.TextPrompt("Enter the Flight ID:", GetFlightIdValidate())
 	if flightId == nil {
 		fmt.Println("Exit Monitor Flight")
 		return
 	}
 
-	monitorInterval := utlis.TextPrompt("Monitor Interval (In Mins):", GetMonitorIntervalValidate())
+	monitorInterval := utlis.TextPrompt("Enter the Monitor Interval (In Mins):", GetMonitorIntervalValidate())
 	if flightId == nil {
 		fmt.Println("Exit Monitor Flight")
 		return
