@@ -2,4 +2,4 @@ FlightID,From,To,DepartTime,ArrivalTime,Airfare,NumSeat
 1,singapore,taiwan,12:45,16:30,500,100
 2,singapore,taiwan,12:23,16:45,300,100
 3,singapore,taiwan,12:22,15:55,400,100
-1,taiwan,china,4:22,12:30,1200,100
+4,taiwan,china,4:22,12:30,1200,100

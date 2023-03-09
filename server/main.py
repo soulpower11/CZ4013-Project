@@ -252,11 +252,11 @@ def reserve_seat(ip, flightID, seat):
     errorCode = 0
     selectedFlight = df[(df["FlightID"] == flightID)]
     noSeat = selectedFlight["NumSeat"]
-
+    
     if len(selectedFlight) == 1 and len(noSeat) == 1 and seat <= int(noSeat.values[0]):
         df.loc[df["FlightID"] == flightID, "NumSeat"] -= seat
-
         if ip in reservation:
+
             if flightID in reservation[ip]:
                 reservation[ip][flightID] += seat
             else:
@@ -371,12 +371,12 @@ def at_most_once():
 
     while True:
         print("####### Server is listening #######")
-        print("Current Stored Respond: \n", responseCache)
-        print("Current Stored Address ID: \n", requestIds)
+        #print("Current Stored Respond: \n", responseCache)
+        #print("Current Stored Address ID: \n", requestIds)
         data, address = s.recvfrom(4096)
         requestId = data[:23]
         ip = utlis.decodeIPFromRequestId(requestId)
-        #print("Data:", data)
+        print("Data:", data)
         print("IP:", ip)
         print(len(ip))
 
@@ -384,8 +384,8 @@ def at_most_once():
         requestByte = data[23:]
         request, serviceType, _, packetLoss = utlis.unmarshal(requestByte)
 
-        #print(df.to_string())
-        #print("Service Type:", serviceType)
+        print(df.to_string())
+        print("Service Type:", serviceType)
         print("Time Out:", packetLoss)
 
         if not duplicated:
