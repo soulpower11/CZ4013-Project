@@ -45,6 +45,9 @@ func MonitorFlight(packetLoss int32) {
 
 	_, response, _, errorCode, _ := utlis.Unmarshal(received[23:])
 	if errorCode == 0 {
+		message := response.Value[0].(MonitorResponse).Msg
+		fmt.Println(message)
+
 		interval := time.Duration(utlis.StrToInt32(*monitorInterval)) * time.Minute
 		conn.SetReadDeadline(time.Now().Add(interval))
 

@@ -13,7 +13,7 @@ func main() {
 	packetLoss := int32(0)
 
 	for !exit {
-		options := []string{"Look for available flights", "Flight details", "Make seat reservation", "Monitor flight", "Check seat reservation", "Cancel seat reservation", "Toggle Simulated Packet Loss", "Exit"}
+		options := []string{"Look for available flights", "Get flight details", "Make seat reservation", "Monitor flight", "Check seat reservation", "Cancel seat reservation", "Toggle Simulated Packet Loss", "Exit"}
 		choice := utlis.SelectPrompt("Please select your choice:", options)
 
 		switch choice {

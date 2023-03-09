@@ -4,7 +4,7 @@ from dataclasses import dataclass, fields
 import string
 import sys
 import re
-from serviceType import (
+from consts import (
     ByteOrdering,
     DataType,
     ServiceType,
