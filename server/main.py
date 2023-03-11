@@ -4,6 +4,7 @@ import threading
 import time
 import utlis
 import pandas as pd
+from tabulate import tabulate
 
 ip = "127.0.0.1"
 # ip = "10.0.0.12"
@@ -46,12 +47,10 @@ def load_flight_info():
     df = pd.read_csv("flightInfo.csv")
 
     print("####### Initial Flight Information #######")
-    print(df.to_string())
+    print(tabulate(df, headers="keys", tablefmt="psql"))
 
 
 def start_cache_cleaner(interval):
-    print("Clearing saved responses")
-
     def clean_cache():
         while True:
             expired_keys = []
@@ -60,6 +59,9 @@ def start_cache_cleaner(interval):
                     expired_keys.append(key)
             for key in expired_keys:
                 del responseCache[key]
+            print("####### Clearing saved responses #######")
+            print("Updated saved Responses:", responseCache)
+            print("####### Clearing Ended #######")
             time.sleep(interval)
 
     t = threading.Thread(target=clean_cache)
@@ -405,7 +407,7 @@ def services(request, serviceType, address, requestId):
         bytes, size = cancel_reservation(ip, flightId)
 
     print("Updated Flights Information")
-    print(df.to_string())
+    print(tabulate(df, headers="keys", tablefmt="psql"))
     return bytes, size
 
 
@@ -439,12 +441,14 @@ def at_most_once():
 
         requestId, ip, request, serviceType, packetLoss = decode_request(data)
         duplicated = check_duplicated_requestIds(requestId)
+        print("Saved Request IDs:", requestIds)
 
         print("Duplicated Request:", bool(duplicated))
         if not duplicated:
             bytes, size = services(request, serviceType, address, requestId)
 
             set_response_cache(requestId, bytes, 2 * 60)
+            print("Saved Responses:", responseCache)
         else:
             bytes = get_response_cache(requestId)
 
