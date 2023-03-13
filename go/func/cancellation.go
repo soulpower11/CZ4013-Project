@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/jedib0t/go-pretty/text"
 	. "github.com/soulpower11/CZ4031-Project/const"
 	"github.com/soulpower11/CZ4031-Project/utlis"
 )
@@ -40,6 +41,6 @@ func Cancellation(packetLoss int32) {
 	if errorCode == 0 {
 		println(response.Value[0].(CancellationResponse).Msg)
 	} else {
-		println(response.Error)
+		fmt.Printf("%s\n", text.FgRed.Sprintf("%s", response.Error))
 	}
 }

@@ -18,7 +18,9 @@ func indexOf(arr []string, val string) int {
 
 func SelectPrompt(label string, items []string) int {
 	prompt := selection.New(label, items)
+	prompt.PageSize = 5
 	prompt.Filter = nil
+	prompt.ResultTemplate = GetSelectTemplate()
 
 	choice, err := prompt.RunPrompt()
 	if err != nil {
@@ -31,7 +33,7 @@ func SelectPrompt(label string, items []string) int {
 func TextPrompt(label string, validate func(input string) error) *string {
 	prompt := textinput.New(label)
 	prompt.Validate = validate
-	template, resultTemplate := GetTemplate()
+	template, resultTemplate := GetTextTemplate()
 	prompt.Template = template
 	prompt.ResultTemplate = resultTemplate
 
