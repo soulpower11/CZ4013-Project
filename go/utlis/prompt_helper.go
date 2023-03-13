@@ -1,33 +1,45 @@
 package utlis
 
 import (
+	"github.com/erikgeiser/promptkit/selection"
+	"github.com/erikgeiser/promptkit/textinput"
 	"github.com/manifoldco/promptui"
-	. "github.com/soulpower11/CZ4031-Project/const"
+	// . "github.com/soulpower11/CZ4031-Project/const"
 )
 
-func SelectPrompt(label string, items interface{}) int {
-	prompt := promptui.Select{
-		Label: label,
-		Items: items,
+func indexOf(arr []string, val string) int {
+	for pos, v := range arr {
+		if v == val {
+			return pos
+		}
 	}
+	return -1
+}
 
-	choice, _, err := prompt.Run()
+func SelectPrompt(label string, items []string) int {
+	sp := selection.New(label, items)
 
+	// sp.PageSize = 3
+
+	choice, err := sp.RunPrompt()
 	if err != nil {
 		return -1
 	}
 
-	return choice
+	return indexOf(items, choice)
 }
 
 func TextPrompt(label string, validate func(input string) error) *string {
-	prompt := promptui.Prompt{
-		Label:     label,
-		Validate:  validate,
-		Templates: GetTemplate(),
-	}
+	prompt := textinput.New(label)
+	prompt.Validate = validate
 
-	text, err := prompt.Run()
+	// prompt := promptui.Prompt{
+	// 	Label:     label,
+	// 	Validate:  validate,
+	// 	Templates: GetTemplate(),
+	// }
+
+	text, err := prompt.RunPrompt()
 
 	for {
 		if err == promptui.ErrInterrupt {
@@ -36,24 +48,8 @@ func TextPrompt(label string, validate func(input string) error) *string {
 		if err == nil {
 			break
 		}
-		text, err = prompt.Run()
+		text, err = prompt.RunPrompt()
 	}
 
 	return &text
-}
-
-func ConfirmPrompt(label string) *string {
-	prompt := promptui.Prompt{
-		Label:     label,
-		IsConfirm: true,
-	}
-
-	result, err := prompt.Run()
-
-	if err != nil {
-		res := ""
-		return &res
-	}
-
-	return &result
 }
