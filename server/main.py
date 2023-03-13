@@ -139,7 +139,9 @@ def send_updates(flight_id):
             if flight_id in val:
                 address = val[flight_id][0]
                 request_id = val[flight_id][1]
-                seats = df.loc[df["FlightID"] == flight_id, "NumSeat"].iloc[0] # Get the number of seats of the Flight ID
+                seats = df.loc[df["FlightID"] == flight_id, "NumSeat"].iloc[
+                    0
+                ]  # Get the number of seats of the Flight ID
 
                 # Marshal the response and send it back to the client
                 bytes_, size = utlis.marshal(
@@ -243,9 +245,9 @@ def reserve_seat(ip, flight_id, seat):
     no_of_seats = selected_flight["NumSeat"]
 
     if (
-            len(selected_flight) == 1
-            and len(no_of_seats) == 1
-            and seat <= int(no_of_seats.values[0])
+        len(selected_flight) == 1
+        and len(no_of_seats) == 1
+        and seat <= int(no_of_seats.values[0])
     ):
         df.loc[df["FlightID"] == flight_id, "NumSeat"] -= seat
         if ip in reservation:
@@ -305,8 +307,8 @@ def monitor_flight(address, flight_id, request_id, monitor_interval):
     else:
         response = utlis.Response(
             error="The flight ID "
-                  + str(flight_id)
-                  + " you are trying to monitor doesn't exist."
+            + str(flight_id)
+            + " you are trying to monitor doesn't exist."
         )
         error_code = 1
 
@@ -333,8 +335,8 @@ def check_reservation(ip, flight_id):
         else:
             response = utlis.Response(
                 error="Seat reservation for Flight ID "
-                      + str(flight_id)
-                      + " was not found."
+                + str(flight_id)
+                + " was not found."
             )
             error_code = 1
     else:
@@ -380,8 +382,8 @@ def cancel_reservation(ip, flight_id):
         else:
             response = utlis.Response(
                 error="Seat reservation for Flight ID "
-                      + str(flight_id)
-                      + " was not found."
+                + str(flight_id)
+                + " was not found."
             )
             error_code = 1
     else:
@@ -446,14 +448,21 @@ def services(request, service_type, address, request_id):
 
 # function to decode the request byte and return the useful information
 def decode_request(data):
-    request_id = data[:23]
-    ip = utlis.decode_ip_from_request_id(request_id)
-    request_byte = data[23:]
-    request, service_type, _, packet_loss = utlis.unmarshal(request_byte)
+    if len(data) > 41:
+        request_id = data[:23]
+        ip = utlis.decode_ip_from_request_id(request_id)
+        try:
+            socket.inet_aton(ip)
+            request_byte = data[23:]
+            request, service_type, _, packet_loss = utlis.unmarshal(request_byte)
 
-    print("Received request from:", ip)
-    print("Simulated packet loss:", bool(packet_loss))
-    return request_id, ip, request, service_type, packet_loss
+            print("Received request from:", ip)
+            print("Simulated packet loss:", bool(packet_loss))
+            return request_id, ip, request, service_type, packet_loss
+        except socket.error:
+            return None, None, None, None, None
+    else:
+        return None, None, None, None, None
 
 
 # Send response back to client
@@ -476,6 +485,8 @@ def at_most_once():
         data, address = s.recvfrom(4096)
 
         request_id, ip, request, service_type, packet_loss = decode_request(data)
+        if request_id == None:
+            continue
         duplicated = check_duplicated_request_ids(request_id)
         print("Saved Request IDs:", requestIds)
 
@@ -502,7 +513,8 @@ def at_least_once():
         data, address = s.recvfrom(4096)
 
         request_id, ip, request, service_type, packet_loss = decode_request(data)
-
+        if request_id == None:
+            continue
         bytes_, size = services(request, service_type, address, request_id)
         send_response(address, request_id, bytes_, packet_loss)
 
