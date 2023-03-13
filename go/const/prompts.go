@@ -6,11 +6,13 @@ import (
 	"strconv"
 )
 
-func GetTemplate() string {
+func GetTemplate() (string, string) {
 	return `
-	{{- if .ValidationError }} {{- Foreground "#ff0000" .Prompt }} {{ .Input -}}
-	{{- else }} {{- Foreground "#008000" .Prompt }} {{ .Input -}}
+	{{- if .ValidationError }} {{- Foreground "1" .Prompt }} {{ .Input -}}
+	{{- else }} {{- Foreground "2" .Prompt }} {{ .Input -}}
 	{{- end -}}
+	`, `
+	{{- print (Bold .Prompt) " " (Foreground "32"  (Mask .FinalValue)) "\n" -}}
 	`
 }
 
