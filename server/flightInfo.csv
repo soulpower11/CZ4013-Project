@@ -3,3 +3,9 @@ FlightID,From,To,DepartTime,Airfare,NumSeat
 2,singapore,taiwan,10/3/2023 12:23,300.00,100
 3,singapore,taiwan,19/4/2023 12:22,400.00,100
 4,taiwan,china,10/3/2023 4:22,1200.00,100
+5,taiwan,china,12/3/2023 6:42,2500.00,400
+6,singapore,china,11/3/2023 5:22,2200.00,500
+7,singapore,malaysia,30/3/2023 13:22,800.00,150
+8,singapore,malaysia,15/3/2023 9:22,520.50,250
+9,singapore,malaysia,12/3/2023 10:22,1100.50,350
+10,singapore,malaysia,12/4/2023 11:22,1800.30,150

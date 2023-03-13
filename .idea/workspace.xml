@@ -4,26 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9613168e-3105-4ad8-a41d-4a25eedaff16" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/go/const/const.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/const/const.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/const/prompts.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/const/prompts.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/func/cancellation.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/func/cancellation.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/func/check_reservation.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/func/check_reservation.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/func/monitor.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/func/monitor.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/func/query_deperturetime.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/func/query_deperturetime.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/func/query_flightId.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/func/query_flightId.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/func/reservation.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/func/reservation.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/func/toggle_packet_loss.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/func/toggle_packet_loss.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/func/udp_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/func/udp_server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/utlis/display_helper.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/utlis/display_helper.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/utlis/prompt_helper.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/utlis/prompt_helper.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go/utlis/utlis.go" beforeDir="false" afterPath="$PROJECT_DIR$/go/utlis/utlis.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/consts.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/consts.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/utlis.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/utlis.py" afterDir="false" />
-    </list>
+    <list default="true" id="9613168e-3105-4ad8-a41d-4a25eedaff16" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
