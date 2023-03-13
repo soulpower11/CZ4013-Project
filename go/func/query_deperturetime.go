@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/jedib0t/go-pretty/text"
 	. "github.com/soulpower11/CZ4031-Project/const"
 	"github.com/soulpower11/CZ4031-Project/utlis"
 )
@@ -46,6 +47,6 @@ func QueryDepartureTime(packetLoss int32) {
 		}
 		utlis.DisplayFlightInfo(flightInfos)
 	} else {
-		println(response.Error)
+		fmt.Printf("%s\n", text.FgRed.Sprintf("%s", response.Error))
 	}
 }

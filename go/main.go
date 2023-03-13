@@ -10,13 +10,12 @@ import (
 
 func main() {
 	fmt.Printf("%s\n", FgWhite.Sprintf("%s", FormatTitle.Apply("----- Welcome to our airplane service -----")))
-	// fmt.Println("----- Welcome to our airplane service -----")
 	exit := false
 	packetLoss := int32(0)
 
 	for !exit {
 		options := []string{"Look for available flights", "Get flight details", "Make seat reservation", "Monitor flight", "Check seat reservation", "Cancel seat reservation", "Toggle Simulated Packet Loss", "Exit"}
-		choice := utlis.SelectPrompt("Please select your choice:", options)
+		choice := utlis.SelectPrompt("Use the arrow keys to navigate: ↓ ↑ → ←\nPlease select your choice:", options)
 
 		switch choice {
 		case 0:

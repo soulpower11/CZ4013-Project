@@ -4,18 +4,25 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
-
-	"github.com/manifoldco/promptui"
 )
 
-func GetTemplate() *promptui.PromptTemplates {
-	templates := &promptui.PromptTemplates{
-		Prompt:  "{{ . }} ",
-		Valid:   "{{ . | green }} ",
-		Invalid: "{{ . | red }} ",
-		Success: "{{ . | bold }} ",
-	}
-	return templates
+func GetSelectTemplate() string {
+	return `
+	{{- print (Foreground "2" "v") " " (Final .FinalChoice) "\n" -}}
+	`
+}
+
+func GetTextTemplate() (string, string) {
+	return `
+	{{- if .ValidationError }} {{- Foreground "1" .Prompt }} {{ .Input -}}
+	{{- else }} {{- Foreground "2" .Prompt }} {{ .Input -}}
+	{{- end -}}
+	{{- if .ValidationError -}}
+	{{- (print (Foreground "1" "\n>> ") (Foreground "1" .ValidationError.Error)) -}}
+	{{- end -}}
+	`, `
+	{{- print (Bold .Prompt) " " (Foreground "32"  (Mask .FinalValue)) "\n" -}}
+	`
 }
 
 func GetCountryNameValidate() func(input string) error {
@@ -23,8 +30,8 @@ func GetCountryNameValidate() func(input string) error {
 		if len(input) < 1 {
 			return errors.New("Country name cannot be empty")
 		}
-		reg, _ := regexp.Compile("^[^a-zA-Z]+$")
-		if reg.MatchString(input) {
+		reg, _ := regexp.Compile("^[a-zA-Z]+$")
+		if !reg.MatchString(input) {
 			return errors.New("Country name cannot only contain special characters or numbers")
 		}
 		return nil
