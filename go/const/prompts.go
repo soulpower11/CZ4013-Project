@@ -4,18 +4,14 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
-
-	"github.com/manifoldco/promptui"
 )
 
-func GetTemplate() *promptui.PromptTemplates {
-	templates := &promptui.PromptTemplates{
-		Prompt:  "{{ . }} ",
-		Valid:   "{{ . | green }} ",
-		Invalid: "{{ . | red }} ",
-		Success: "{{ . | bold }} ",
-	}
-	return templates
+func GetTemplate() string {
+	return `
+	{{- if .ValidationError }} {{- Foreground "#ff0000" .Prompt }} {{ .Input -}}
+	{{- else }} {{- Foreground "#008000" .Prompt }} {{ .Input -}}
+	{{- end -}}
+	`
 }
 
 func GetCountryNameValidate() func(input string) error {
