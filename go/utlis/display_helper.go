@@ -6,9 +6,10 @@ import (
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/jedib0t/go-pretty/v6/table"
-	. "github.com/soulpower11/CZ4031-Project/const"
+	. "github.com/soulpower11/CZ4013-Project/const"
 )
 
+// DisplayFlightIds Display Flight IDs in a table
 func DisplayFlightIds(flightIds []int32) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
@@ -22,19 +23,7 @@ func DisplayFlightIds(flightIds []int32) {
 	t.Render()
 }
 
-func DisplaySeatsReserved(seatsReserved []int32) {
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	t.SetStyle(table.StyleColoredDark)
-	t.AppendHeader(table.Row{"Seat Reserved"})
-
-	for _, seatReserved := range seatsReserved {
-		t.AppendRow([]interface{}{seatReserved})
-	}
-
-	t.Render()
-}
-
+// DisplayFlightInfo Display Flight Info in a table
 func DisplayFlightInfo(flightInfos []QueryDepartureTimeResponse) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)

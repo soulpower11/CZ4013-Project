@@ -6,21 +6,27 @@ import utlis
 import pandas as pd
 from tabulate import tabulate
 
+# Server IP, Port and Object
 ip = "127.0.0.1"
 # ip = "10.0.0.12"
 port = 8080
 s = None
 
+# Flight Info Dataframe
 df = None
 
+# Save the reservations
 reservation = {}
 
+# Save the monitoring client address
 monitorCache = []
 
+# Save the request ids and response
 requestIds = set()
 requestExpiry = {}
 responseCache = {}
 
+# The services name
 Services = [
     "Look for available flights",
     "Get flight details",
@@ -31,6 +37,7 @@ Services = [
 ]
 
 
+# Start the UDP server
 def start_server():
     # Create a UDP socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -42,6 +49,7 @@ def start_server():
     return s
 
 
+# Load flight info from CSV
 def load_flight_info():
     global df
     df = pd.read_csv("flightInfo.csv")
@@ -50,6 +58,7 @@ def load_flight_info():
     print(tabulate(df, headers="keys", tablefmt="psql"))
 
 
+# Clear the response cache, runs every 1 min
 def start_cache_cleaner(interval):
     def clean_cache():
         while True:
@@ -69,6 +78,8 @@ def start_cache_cleaner(interval):
     t.start()
 
 
+# Get the response cache
+# For at most once operation
 def get_response_cache(key):
     if key in responseCache:
         return responseCache[key]["value"]
@@ -76,24 +87,29 @@ def get_response_cache(key):
         return None
 
 
+# Set the response cache
+# For at most once operation
 def set_response_cache(key, value, expiry_time):
     responseCache[key] = {"value": value, "expiry": time.time() + expiry_time}
 
 
-def check_duplicated_requestIds(requestId):
+# Check for duplicated request ids add it to the set
+# For at most once operation
+def check_duplicated_request_ids(request_id):
     # Remove expired request IDs from the set.
     for expired_id in [k for k, v in requestExpiry.items() if v <= time.time()]:
         requestIds.remove(expired_id)
         del requestExpiry[expired_id]
 
-    if requestId not in requestIds:
-        requestIds.add(requestId)
-        requestExpiry[requestId] = time.time() + 2 * 60
+    if request_id not in requestIds:
+        requestIds.add(request_id)
+        requestExpiry[request_id] = time.time() + 2 * 60
         return False
     else:
         return True
 
 
+# Get the address for the monitoring client
 def get_cache(index):
     if monitorCache[index]["expiry"] > time.time():
         return monitorCache[index]["value"]
@@ -104,30 +120,34 @@ def get_cache(index):
         return None
 
 
+# Set the monitoring cache
 def set_cache(value, expiry_time):
     monitorCache.append({"value": value, "expiry": time.time() + expiry_time})
 
 
-def send_updates(flightId):
+# Send update to client that is subscribed to monitor flight
+def send_updates(flight_id):
     global monitorCache
     length = len(monitorCache)
 
     index = 0
+    # Iterate through the monitor cache, remove expired ones and send updates to the correct ones
     for _ in range(length):
         val = get_cache(index)
         if val != None:
             index += 1
-            if flightId in val:
-                address = val[flightId][0]
-                requestId = val[flightId][1]
-                seats = df.loc[df["FlightID"] == flightId, "NumSeat"].iloc[0]
+            if flight_id in val:
+                address = val[flight_id][0]
+                request_id = val[flight_id][1]
+                seats = df.loc[df["FlightID"] == flight_id, "NumSeat"].iloc[0] # Get the number of seats of the Flight ID
 
-                bytes, size = utlis.marshal(
+                # Marshal the response and send it back to the client
+                bytes_, size = utlis.marshal(
                     utlis.Response(
                         [
                             utlis.MonitorResponse(
                                 "Flight ID "
-                                + str(flightId)
+                                + str(flight_id)
                                 + " updated to "
                                 + str(seats)
                                 + "."
@@ -139,44 +159,48 @@ def send_updates(flightId):
                     0,
                     0,
                 )
-                send_response(address, requestId, bytes, 0)
+                send_response(address, request_id, bytes_, 0)
 
 
+# The query Flight ID feature
+# Get the Flight IDs by specifying the source and destination country
 def search_flights(source, destination):
     response = utlis.Response()
-    errorCode = 0
+    error_code = 0
 
     # Use boolean indexing to select the rows that match your criteria
     selected_flights = df[(df["From"] == source) & (df["To"] == destination)]
 
     # Get the FlightID column from the selected rows
-    flightIds = list(map(int, selected_flights["FlightID"].values.astype(int)))
+    flight_ids = list(map(int, selected_flights["FlightID"].values.astype(int)))
 
-    if len(flightIds) > 0:
-        response.value = [utlis.QueryFlightIdResponse() for i in range(len(flightIds))]
-        for i in range(len(flightIds)):
-            response.value[i].flightId = flightIds[i]
+    if len(flight_ids) > 0:
+        response.value = [utlis.QueryFlightIdResponse() for i in range(len(flight_ids))]
+        for i in range(len(flight_ids)):
+            response.value[i].flightId = flight_ids[i]
     else:
         response = utlis.Response(
             error="No flights from " + source + " to " + destination + " was found."
         )
-        errorCode = 1
+        error_code = 1
 
-    bytes, size = utlis.marshal(
+    bytes_, size = utlis.marshal(
         response,
-        utlis.ServiceType.QUERY_FLIGHTID,
+        utlis.ServiceType.QUERY_FLIGHT_ID,
         utlis.MessageType.REPLY,
-        errorCode,
+        error_code,
         0,
     )
-    return bytes, size
+    return bytes_, size
 
 
-def get_flights_details(flightId):
+# The query flight details feature
+# Get the departure time, airfare and seat availability of a specific Flight ID
+def get_flights_details(flight_id):
     response = utlis.Response()
-    errorCode = 0
+    error_code = 0
 
-    selected_flights = df[(df["FlightID"] == flightId)]
+    selected_flights = df[(df["FlightID"] == flight_id)]
     selected_flights = (
         selected_flights.reset_index()
     )  # make sure indexes pair with number of rows
@@ -194,153 +218,161 @@ def get_flights_details(flightId):
             response.value[i].airFare = row["Airfare"]
             response.value[i].seatAvailability = row["NumSeat"]
     else:
-        response = utlis.Response(error="Flight ID " + str(flightId) + " not found.")
-        errorCode = 1
+        response = utlis.Response(error="Flight ID " + str(flight_id) + " not found.")
+        error_code = 1
 
-    bytes, size = utlis.marshal(
+    bytes_, size = utlis.marshal(
         response,
-        utlis.ServiceType.QUERY_DEPARTURETIME,
+        utlis.ServiceType.QUERY_DEPARTURE_TIME,
         utlis.MessageType.REPLY,
-        errorCode,
+        error_code,
         0,
     )
-    return bytes, size
+    return bytes_, size
 
 
-def reserve_seat(ip, flightId, seat):
+# The reservation function
+# Reserve seats for a specific Flight ID
+def reserve_seat(ip, flight_id, seat):
     global df
     global reservation
 
     response = utlis.Response()
-    errorCode = 0
-    selectedFlight = df[(df["FlightID"] == flightId)]
-    noOfSeats = selectedFlight["NumSeat"]
+    error_code = 0
+    selected_flight = df[(df["FlightID"] == flight_id)]
+    no_of_seats = selected_flight["NumSeat"]
 
     if (
-        len(selectedFlight) == 1
-        and len(noOfSeats) == 1
-        and seat <= int(noOfSeats.values[0])
+            len(selected_flight) == 1
+            and len(no_of_seats) == 1
+            and seat <= int(no_of_seats.values[0])
     ):
-        df.loc[df["FlightID"] == flightId, "NumSeat"] -= seat
+        df.loc[df["FlightID"] == flight_id, "NumSeat"] -= seat
         if ip in reservation:
 
-            if flightId in reservation[ip]:
-                reservation[ip][flightId] += seat
+            if flight_id in reservation[ip]:
+                reservation[ip][flight_id] += seat
             else:
-                reservation[ip][flightId] = seat
+                reservation[ip][flight_id] = seat
         else:
-            reservation[ip] = {flightId: seat}
+            reservation[ip] = {flight_id: seat}
 
-        send_updates(flightId)
+        send_updates(flight_id)
         response = utlis.Response([utlis.ReservationResponse("Seats Reversed")])
-    elif len(selectedFlight) == 0:
-        response = utlis.Response(error="Flight ID " + str(flightId) + " not found.")
-        errorCode = 1
-    elif len(selectedFlight) > 1:
+    elif len(selected_flight) == 0:
+        response = utlis.Response(error="Flight ID " + str(flight_id) + " not found.")
+        error_code = 1
+    elif len(selected_flight) > 1:
         response = utlis.Response(error="Server Error. There is duplicated Flight ID")
-        errorCode = 1
-    elif seat > int(noOfSeats.values[0]):
+        error_code = 1
+    elif seat > int(no_of_seats.values[0]):
         response = utlis.Response(
-            error="Flight ID " + str(flightId) + " have not enough seats."
+            error="Flight ID " + str(flight_id) + " have not enough seats."
         )
-        errorCode = 1
+        error_code = 1
     else:
         response = utlis.Response(
             error="Server Error. Something is wrong with the flight information"
         )
-        errorCode = 1
+        error_code = 1
 
-    bytes, size = utlis.marshal(
+    bytes_, size = utlis.marshal(
         response,
         utlis.ServiceType.RESERVATION,
         utlis.MessageType.REPLY,
-        errorCode,
+        error_code,
         0,
     )
-    return bytes, size
+    return bytes_, size
 
 
-def monitor_flight(address, flightId, requestId, monitorInterval):
+# The monitor feature
+# Monitor the seats availability of a specific flight
+def monitor_flight(address, flight_id, request_id, monitor_interval):
     global monitorCache
 
     response = utlis.Response()
-    errorCode = 0
+    error_code = 0
 
-    selected_flights = df[(df["FlightID"] == flightId)]
+    selected_flights = df[(df["FlightID"] == flight_id)]
     selected_flights = selected_flights.reset_index()
 
     if len(selected_flights.index == 0):
-        set_cache({flightId: (address, requestId)}, monitorInterval * 60)
+        set_cache({flight_id: (address, request_id)}, monitor_interval * 60)
         response = utlis.Response(
-            [utlis.MonitorResponse("Monitoring started succesfully!")]
+            [utlis.MonitorResponse("Monitoring started successfully!")]
         )
     else:
         response = utlis.Response(
             error="The flight ID "
-            + str(flightId)
-            + " you are trying to monitor doesn't exist."
+                  + str(flight_id)
+                  + " you are trying to monitor doesn't exist."
         )
-        errorCode = 1
+        error_code = 1
 
-    bytes, size = utlis.marshal(
+    bytes_, size = utlis.marshal(
         response,
         utlis.ServiceType.MONITOR,
         utlis.MessageType.REPLY,
-        errorCode,
+        error_code,
         0,
     )
-    return bytes, size
+    return bytes_, size
 
 
-def check_reservation(ip, flightId):
+# The check reservation feature
+# Check the number of seat reserved for a specific Flight ID
+def check_reservation(ip, flight_id):
     response = utlis.Response()
-    errorCode = 0
+    error_code = 0
 
     if ip in reservation:
-        if flightId in reservation[ip]:
-            seat = reservation[ip][flightId]
+        if flight_id in reservation[ip]:
+            seat = reservation[ip][flight_id]
             response = utlis.Response([utlis.CheckReservationResponse(seat)])
         else:
             response = utlis.Response(
                 error="Seat reservation for Flight ID "
-                + str(flightId)
-                + " was not found."
+                      + str(flight_id)
+                      + " was not found."
             )
-            errorCode = 1
+            error_code = 1
     else:
         response = utlis.Response(
-            error="Seat reservation for Flight ID " + str(flightId) + " was not found."
+            error="Seat reservation for Flight ID " + str(flight_id) + " was not found."
         )
-        errorCode = 1
+        error_code = 1
 
-    bytes, size = utlis.marshal(
+    bytes_, size = utlis.marshal(
         response,
         utlis.ServiceType.CHECK_RESERVATION,
         utlis.MessageType.REPLY,
-        errorCode,
+        error_code,
         0,
     )
-    return bytes, size
+    return bytes_, size
 
 
-def cancel_reservation(ip, flightId):
+# The cancellation feature
+# Cancel the seat reservation of a specific Flight ID
+def cancel_reservation(ip, flight_id):
     global df
     global reservation
 
     response = utlis.Response()
-    errorCode = 0
+    error_code = 0
 
     if ip in reservation:
-        if flightId in reservation[ip]:
-            seat = reservation[ip][flightId]
-            df.loc[df["FlightID"] == flightId, "NumSeat"] += seat
-            del reservation[ip][flightId]
-            send_updates(flightId)
+        if flight_id in reservation[ip]:
+            seat = reservation[ip][flight_id]
+            df.loc[df["FlightID"] == flight_id, "NumSeat"] += seat
+            del reservation[ip][flight_id]
+            send_updates(flight_id)
             response = utlis.Response(
                 [
                     utlis.CancellationResponse(
                         "Seat reservation for Flight ID "
-                        + str(flightId)
+                        + str(flight_id)
                         + " is cancelled"
                     )
                 ]
@@ -348,88 +380,92 @@ def cancel_reservation(ip, flightId):
         else:
             response = utlis.Response(
                 error="Seat reservation for Flight ID "
-                + str(flightId)
-                + " was not found."
+                      + str(flight_id)
+                      + " was not found."
             )
-            errorCode = 1
+            error_code = 1
     else:
         response = utlis.Response(
-            error="Seat reservation for Flight ID " + str(flightId) + " was not found."
+            error="Seat reservation for Flight ID " + str(flight_id) + " was not found."
         )
-        errorCode = 1
+        error_code = 1
 
-    bytes, size = utlis.marshal(
+    bytes_, size = utlis.marshal(
         response,
         utlis.ServiceType.CANCELLATION,
         utlis.MessageType.REPLY,
-        errorCode,
+        error_code,
         0,
     )
-    return bytes, size
+    return bytes_, size
 
 
-def services(request, serviceType, address, requestId):
-    print("For Service:", Services[serviceType])
+# function to pass the information to its respective services
+def services(request, service_type, address, request_id):
+    print("For Service:", Services[service_type])
     print("Request Parameters")
 
-    if serviceType == 0:
+    if service_type == 0:
         source = request[0].source.lower()
         destination = request[0].destination.lower()
         print("Source:", source, "Destination:", destination)
 
-        bytes, size = search_flights(source, destination)
-    elif serviceType == 1:
-        flightId = request[0].flightId
-        print("Flight ID:", flightId)
+        bytes_, size = search_flights(source, destination)
+    elif service_type == 1:
+        flight_id = request[0].flightId
+        print("Flight ID:", flight_id)
 
-        bytes, size = get_flights_details(flightId)
-    elif serviceType == 2:
-        flightId = request[0].flightId
-        noOfSeats = request[0].noOfSeats
+        bytes_, size = get_flights_details(flight_id)
+    elif service_type == 2:
+        flight_id = request[0].flightId
+        no_of_seats = request[0].noOfSeats
 
-        print("Flight ID:", flightId, "No. of seats:", noOfSeats)
-        bytes, size = reserve_seat(ip, flightId, noOfSeats)
-    elif serviceType == 3:
-        flightId = request[0].flightId
-        monitorInterval = request[0].monitorInterval
+        print("Flight ID:", flight_id, "No. of seats:", no_of_seats)
+        bytes_, size = reserve_seat(ip, flight_id, no_of_seats)
+    elif service_type == 3:
+        flight_id = request[0].flightId
+        monitor_interval = request[0].monitorInterval
 
-        print("Flight ID:", flightId, "Monitor Interval:", monitorInterval)
-        bytes, size = monitor_flight(address, flightId, requestId, monitorInterval)
-    elif serviceType == 4:
-        flightId = request[0].flightId
+        print("Flight ID:", flight_id, "Monitor Interval:", monitor_interval)
+        bytes_, size = monitor_flight(address, flight_id, request_id, monitor_interval)
+    elif service_type == 4:
+        flight_id = request[0].flightId
 
-        print("Flight ID:", flightId)
-        bytes, size = check_reservation(ip, flightId)
-    elif serviceType == 5:
-        flightId = request[0].flightId
+        print("Flight ID:", flight_id)
+        bytes_, size = check_reservation(ip, flight_id)
+    elif service_type == 5:
+        flight_id = request[0].flightId
 
-        print("Flight ID:", flightId)
-        bytes, size = cancel_reservation(ip, flightId)
+        print("Flight ID:", flight_id)
+        bytes_, size = cancel_reservation(ip, flight_id)
 
     print("Updated Flights Information")
     print(tabulate(df, headers="keys", tablefmt="psql"))
-    return bytes, size
+    return bytes_, size
 
 
+# function to decode the request byte and return the useful information
 def decode_request(data):
-    requestId = data[:23]
-    ip = utlis.decodeIPFromRequestId(requestId)
-    requestByte = data[23:]
-    request, serviceType, _, packetLoss = utlis.unmarshal(requestByte)
+    request_id = data[:23]
+    ip = utlis.decode_ip_from_request_id(request_id)
+    request_byte = data[23:]
+    request, service_type, _, packet_loss = utlis.unmarshal(request_byte)
 
     print("Received request from:", ip)
-    print("Simulated packet loss:", bool(packetLoss))
-    return requestId, ip, request, serviceType, packetLoss
+    print("Simulated packet loss:", bool(packet_loss))
+    return request_id, ip, request, service_type, packet_loss
 
 
-def send_response(address, requestId, bytes, packetLoss):
-    if not packetLoss:
-        replyBytes = bytearray()
-        replyBytes.extend(requestId)
-        replyBytes.extend(bytes)
-        s.sendto(replyBytes, address)
+# Send response back to client
+def send_response(address, request_id, bytes_, packet_loss):
+    if not packet_loss:
+        reply_bytes = bytearray()
+        reply_bytes.extend(request_id)
+        reply_bytes.extend(bytes_)
+        s.sendto(reply_bytes, address)
 
 
+# function for at most once operation
 def at_most_once():
     global s
     s = start_server()
@@ -439,22 +475,23 @@ def at_most_once():
         print("####### Server is listening #######")
         data, address = s.recvfrom(4096)
 
-        requestId, ip, request, serviceType, packetLoss = decode_request(data)
-        duplicated = check_duplicated_requestIds(requestId)
+        request_id, ip, request, service_type, packet_loss = decode_request(data)
+        duplicated = check_duplicated_request_ids(request_id)
         print("Saved Request IDs:", requestIds)
 
         print("Duplicated Request:", bool(duplicated))
         if not duplicated:
-            bytes, size = services(request, serviceType, address, requestId)
+            bytes_, size = services(request, service_type, address, request_id)
 
-            set_response_cache(requestId, bytes, 2 * 60)
+            set_response_cache(request_id, bytes_, 2 * 60)
             print("Saved Responses:", responseCache)
         else:
-            bytes = get_response_cache(requestId)
+            bytes_ = get_response_cache(request_id)
 
-        send_response(address, requestId, bytes, packetLoss)
+        send_response(address, request_id, bytes_, packet_loss)
 
 
+# function for at least once operation
 def at_least_once():
     global s
     s = start_server()
@@ -464,19 +501,22 @@ def at_least_once():
         print("####### Server is listening #######")
         data, address = s.recvfrom(4096)
 
-        requestId, ip, request, serviceType, packetLoss = decode_request(data)
+        request_id, ip, request, service_type, packet_loss = decode_request(data)
 
-        bytes, size = services(request, serviceType, address, requestId)
-        send_response(address, requestId, bytes, packetLoss)
+        bytes_, size = services(request, service_type, address, request_id)
+        send_response(address, request_id, bytes_, packet_loss)
 
 
+# The main function
 if __name__ == "__main__":
+    # Get argument for at most once or at least once
     if len(sys.argv) == 2:
         choice = sys.argv[1]
     else:
         print("Run like : python3 main.py <choice[1: At Most Once, 2: At Least Once]>")
         exit(1)
 
+    # Start at most once or at least once
     if choice == "1":
         start_cache_cleaner(60)  # Run every 60 seconds
         at_most_once()

@@ -4,18 +4,10 @@ import (
 	"github.com/erikgeiser/promptkit"
 	"github.com/erikgeiser/promptkit/selection"
 	"github.com/erikgeiser/promptkit/textinput"
-	. "github.com/soulpower11/CZ4031-Project/const"
+	. "github.com/soulpower11/CZ4013-Project/const"
 )
 
-func indexOf(arr []string, val string) int {
-	for pos, v := range arr {
-		if v == val {
-			return pos
-		}
-	}
-	return -1
-}
-
+// SelectPrompt helper function for a select prompt
 func SelectPrompt(label string, items []string) int {
 	prompt := selection.New(label, items)
 	prompt.PageSize = 5
@@ -27,9 +19,10 @@ func SelectPrompt(label string, items []string) int {
 		return -1
 	}
 
-	return indexOf(items, choice)
+	return IndexOfStringArr(items, choice)
 }
 
+// TextPrompt helper function for a text prompt
 func TextPrompt(label string, validate func(input string) error) *string {
 	prompt := textinput.New(label)
 	prompt.Validate = validate

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	. "github.com/jedib0t/go-pretty/text"
-	functions "github.com/soulpower11/CZ4031-Project/func"
-	"github.com/soulpower11/CZ4031-Project/utlis"
+	functions "github.com/soulpower11/CZ4013-Project/func"
+	"github.com/soulpower11/CZ4013-Project/utlis"
 )
 
 func main() {

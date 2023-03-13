@@ -4,49 +4,54 @@ import (
 	"time"
 )
 
+// Constant values for the server
 const (
-	// HOST = "192.9.175.59"
-	HOST       = "localhost"
-	CLIENTHOST = "localhost"
-	PORT       = "8080"
-	TYPE       = "udp"
-	MAXRETRIES = 5
-	DEADLINE   = 10 * time.Second
+	// Host = "192.9.175.59"
+	Host       = "localhost"
+	ClientHost = "localhost"
+	Port       = "8080"
+	Type       = "udp"
+	MaxRetries = 5
+	Deadline   = 10 * time.Second
 )
+
+//Constant values for the Requests and Responses
 
 type DataType int32
 
 const (
-	INT_TYPE DataType = iota
-	FLOAT_TYPE
-	STRING_TYPE
-	TIME_TYPE
+	IntType DataType = iota
+	FloatType
+	StringType
+	TimeType
 )
 
 type ServiceType int32
 
 const (
-	QUERY_FLIGHTID ServiceType = iota
-	QUERY_DEPARTURETIME
-	RESERVATION
-	MONITOR
-	CHECK_RESERVATION
-	CANCELLATION
+	QueryFlightId_ ServiceType = iota
+	QueryDepartureTime_
+	Reservation_
+	Monitor_
+	CheckReservation_
+	Cancellation_
 )
 
 type MessageType int32
 
 const (
-	REQUEST MessageType = iota
-	REPLY
+	Request MessageType = iota
+	Reply
 )
 
 type ByteOrdering int32
 
 const (
-	BIG_ENDIAN ByteOrdering = iota
-	LITTLE_ENDIAN
+	BigEndian ByteOrdering = iota
+	LittleEndian
 )
+
+// The Request and Response Structs
 
 type QueryFlightIdRequest struct {
 	Source      string
@@ -101,6 +106,7 @@ type CancellationResponse struct {
 	Msg string
 }
 
+// Response Includes the response struct and the error message
 type Response struct {
 	Value []interface{}
 	Error string

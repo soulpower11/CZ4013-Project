@@ -1,4 +1,4 @@
-module github.com/soulpower11/CZ4031-Project
+module github.com/soulpower11/CZ4013-Project
 
 go 1.19
 

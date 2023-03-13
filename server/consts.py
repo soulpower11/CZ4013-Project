@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 
+# Constant values for the Requests and Responses
+
 class DataType(IntEnum):
     INT_TYPE = 0
     FLOAT_TYPE = 1
@@ -13,8 +15,8 @@ class DataType(IntEnum):
 
 
 class ServiceType(IntEnum):
-    QUERY_FLIGHTID = 0
-    QUERY_DEPARTURETIME = 1
+    QUERY_FLIGHT_ID = 0
+    QUERY_DEPARTURE_TIME = 1
     RESERVATION = 2
     MONITOR = 3
     CHECK_RESERVATION = 4
@@ -30,6 +32,8 @@ class ByteOrdering(IntEnum):
     BIG_ENDIAN = 0
     LITTLE_ENDIAN = 1
 
+
+# The Request and Response data class
 
 @dataclass
 class QueryFlightIdRequest:
@@ -96,6 +100,7 @@ class CancellationResponse:
     msg: Optional[str] = None
 
 
+# Response Includes the response dataclass and the error message
 @dataclass
 class Response:
     value: Union[
