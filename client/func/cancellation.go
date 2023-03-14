@@ -48,7 +48,7 @@ func Cancellation(packetLoss int32) {
 	// Unmarshal the response into a struct
 	_, response, _, errorCode, _ := utlis.Unmarshal(received[23:])
 	if errorCode == 0 {
-		println(response.Value[0].(CancellationResponse).Msg)
+		fmt.Printf("%s\n", text.FgGreen.Sprintf("%s", response.Value[0].(CancellationResponse).Msg))
 	} else {
 		fmt.Printf("%s\n", text.FgRed.Sprintf("%s", response.Error))
 	}

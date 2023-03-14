@@ -44,7 +44,7 @@ func CheckReservation(packetLoss int32) {
 		log.Print(err.Error())
 		return
 	}
-	
+
 	// Unmarshal the response into a struct
 	_, response, _, errorCode, _ := utlis.Unmarshal(received[23:])
 	if errorCode == 0 {
@@ -53,7 +53,8 @@ func CheckReservation(packetLoss int32) {
 		if seatsReserved == 1 {
 			word = "seat is"
 		}
-		fmt.Printf("%d %s reserved for Flight ID %s\n", seatsReserved, word, *flightId)
+		message := fmt.Sprintf("%d %s reserved for Flight ID %s", seatsReserved, word, *flightId)
+		fmt.Printf("%s\n", text.FgGreen.Sprintf("%s", message))
 	} else {
 		fmt.Printf("%s\n", text.FgRed.Sprintf("%s", response.Error))
 	}

@@ -58,7 +58,7 @@ func MonitorFlight(packetLoss int32) {
 	if errorCode == 0 {
 		// Print out the success message if there is no error
 		message := response.Value[0].(MonitorResponse).Msg
-		fmt.Println(message)
+		fmt.Printf("%s\n", text.FgGreen.Sprintf("%s", message))
 
 		// Set the response timeout to the monitor interval
 		interval := time.Duration(utlis.StrToInt32(*monitorInterval)) * time.Minute
@@ -72,7 +72,7 @@ func MonitorFlight(packetLoss int32) {
 			if err != nil {
 				// If the error is the timeout error. It means the monitoring have ended
 				if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-					println("Monitoring ended.")
+					fmt.Printf("%s\n", text.FgGreen.Sprintf("%s", "Monitoring ended."))
 					break
 				} else {
 					log.Print("Read data failed:", err.Error())
