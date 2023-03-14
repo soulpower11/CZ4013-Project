@@ -448,6 +448,8 @@ def services(request, service_type, address, request_id):
 
 # function to decode the request byte and return the useful information
 def decode_request(data):
+    # Check if the bytearray is more than 41 in length
+    # Because 23 Bytes for Request ID, 9 Bytes for Request Header, 4 Bytes Element Header, 5 Bytes Variable Header
     if len(data) > 41:
         request_id = data[:23]
         ip = utlis.decode_ip_from_request_id(request_id)

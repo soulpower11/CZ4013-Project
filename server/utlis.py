@@ -35,6 +35,7 @@ def get_endianness():
 
 # Functions to convert a variable type into byte array
 
+
 def int_to_bytes(num):
     size = struct.calcsize("i")
     bytes_ = struct.pack("i", num)
@@ -79,6 +80,7 @@ def to_bytes(variable):
 
 # Functions to convert bytes back to its respective variable type
 
+
 def bytes_to_int(bytes_, byte_order):
     return int.from_bytes(bytes_, byteorder=byte_order, signed=False)
 
@@ -114,6 +116,7 @@ def to_variable(bytes_, data_type, byte_order):
 
 
 # Function to convert the byte ordering byte
+
 
 def byte_ordering_to_byte(num):
     return num.to_bytes(1, byteorder="big")
@@ -152,8 +155,8 @@ def add_request_id(ip, time, bytes_, size):
         padding = bytearray(15 - ip_size)
         result_bytes[ip_size:15] = padding
 
-    result_bytes[15: 15 + time_size] = time_bytes
-    result_bytes[23: 23 + size] = bytes_[:size]
+    result_bytes[15 : 15 + time_size] = time_bytes
+    result_bytes[23 : 23 + size] = bytes_[:size]
 
     return result_bytes, 23 + size
 
@@ -167,7 +170,7 @@ def add_request_id(ip, time, bytes_, size):
 # Packet Loss 1 Byte
 # No. of element 4 Bytes
 def add_request_header(
-        service_type, message_type, error_code, packet_loss, no_of_element, bytes_, size
+    service_type, message_type, error_code, packet_loss, no_of_element, bytes_, size
 ):
     result_bytes = bytearray(9 + size)
 
@@ -183,8 +186,8 @@ def add_request_header(
     result_bytes[2:3] = byte_ordering_bytes
     result_bytes[3:4] = error_code_bytes
     result_bytes[4:5] = time_out_bytes
-    result_bytes[5: 5 + no_of_element_size] = no_of_element_bytes
-    result_bytes[9: 9 + size] = bytes_[:size]
+    result_bytes[5 : 5 + no_of_element_size] = no_of_element_bytes
+    result_bytes[9 : 9 + size] = bytes_[:size]
 
     return result_bytes, 9 + size
 
@@ -192,15 +195,12 @@ def add_request_header(
 # Add the Element Header Bytes
 # Contain a total of 4 Bytes
 # Length of Element 4 Bytes
-# AddElementHeader Add the Element Header Bytes
-# Contain a total of 4 Bytes
-# Length of Element 4 Bytes
 def add_element_header(length, bytes_, size):
     result_bytes = bytearray(4 + size)
 
     length_bytes, length_size = to_bytes(length)
-    result_bytes[0: 0 + length_size] = length_bytes
-    result_bytes[4: 4 + size] = bytes_[:size]
+    result_bytes[0 : 0 + length_size] = length_bytes
+    result_bytes[4 : 4 + size] = bytes_[:size]
 
     return result_bytes, 4 + size
 
@@ -214,31 +214,37 @@ def add_variable_header(data_type, length, bytes_, size):
     length_bytes, length_size = to_bytes(length)
 
     result_bytes[0:1] = data_type_bytes
-    result_bytes[1: 1 + length_size] = length_bytes
-    result_bytes[5: 5 + size] = bytes_[:size]
+    result_bytes[1 : 1 + length_size] = length_bytes
+    result_bytes[5 : 5 + size] = bytes_[:size]
 
     return result_bytes, 5 + size
 
 
 # Set the variable to the respective field
 def set_field(data_class, index, value, service_type, message_type):
-    if service_type == ServiceType.QUERY_FLIGHT_ID and message_type == MessageType.REQUEST:
+    if (
+        service_type == ServiceType.QUERY_FLIGHT_ID
+        and message_type == MessageType.REQUEST
+    ):
         if index == 0:
             data_class.source = value
         elif index == 1:
             data_class.destination = value
-    elif service_type == ServiceType.QUERY_FLIGHT_ID and message_type == MessageType.REPLY:
-        if index == 0:
-            data_class.flightId = value
     elif (
-            service_type == ServiceType.QUERY_DEPARTURE_TIME
-            and message_type == MessageType.REQUEST
+        service_type == ServiceType.QUERY_FLIGHT_ID
+        and message_type == MessageType.REPLY
     ):
         if index == 0:
             data_class.flightId = value
     elif (
-            service_type == ServiceType.QUERY_DEPARTURE_TIME
-            and message_type == MessageType.REPLY
+        service_type == ServiceType.QUERY_DEPARTURE_TIME
+        and message_type == MessageType.REQUEST
+    ):
+        if index == 0:
+            data_class.flightId = value
+    elif (
+        service_type == ServiceType.QUERY_DEPARTURE_TIME
+        and message_type == MessageType.REPLY
     ):
         if index == 0:
             data_class.departureTime = value
@@ -246,7 +252,9 @@ def set_field(data_class, index, value, service_type, message_type):
             data_class.airFare = value
         elif index == 2:
             data_class.seatAvailability = value
-    elif service_type == ServiceType.RESERVATION and message_type == MessageType.REQUEST:
+    elif (
+        service_type == ServiceType.RESERVATION and message_type == MessageType.REQUEST
+    ):
         if index == 0:
             data_class.flightId = value
         elif index == 1:
@@ -263,18 +271,20 @@ def set_field(data_class, index, value, service_type, message_type):
         if index == 0:
             data_class.msg = value
     elif (
-            service_type == ServiceType.CHECK_RESERVATION
-            and message_type == MessageType.REQUEST
+        service_type == ServiceType.CHECK_RESERVATION
+        and message_type == MessageType.REQUEST
     ):
         if index == 0:
             data_class.flightId = value
     elif (
-            service_type == ServiceType.CHECK_RESERVATION
-            and message_type == MessageType.REPLY
+        service_type == ServiceType.CHECK_RESERVATION
+        and message_type == MessageType.REPLY
     ):
         if index == 0:
             data_class.seatsReserved = value
-    elif service_type == ServiceType.CANCELLATION and message_type == MessageType.REQUEST:
+    elif (
+        service_type == ServiceType.CANCELLATION and message_type == MessageType.REQUEST
+    ):
         if index == 0:
             data_class.flightId = value
     elif service_type == ServiceType.CANCELLATION and message_type == MessageType.REPLY:
@@ -304,13 +314,20 @@ def decode_request_header(request_header):
     packet_loss = bytes_to_int(request_header[4:5], byte_ordering)
     no_of_element = bytes_to_int(request_header[5:], byte_ordering)
 
-    return byte_ordering, service_type, message_type, error_code, packet_loss, no_of_element
+    return (
+        byte_ordering,
+        service_type,
+        message_type,
+        error_code,
+        packet_loss,
+        no_of_element,
+    )
 
 
 # DecodeElementHeader Decode the Element Header Bytes
 def decode_element_header(elements_byte, byte_ordering):
     length_of_element = bytes_to_int(elements_byte[:4], byte_ordering)
-    variables_byte = elements_byte[4: 4 + length_of_element]
+    variables_byte = elements_byte[4 : 4 + length_of_element]
 
     return length_of_element, variables_byte
 
@@ -325,11 +342,13 @@ def decode_variable_header(variable_header, byte_ordering):
 
 # DecodeQuery Decode the bytes into each struct fields
 def decode_query(
-        query, elements_byte, byte_ordering, no_of_element, service_type, message_type
+    query, elements_byte, byte_ordering, no_of_element, service_type, message_type
 ):
     for i in range(no_of_element):
-        length_of_element, variables_byte = decode_element_header(elements_byte, byte_ordering)
-        elements_byte = elements_byte[4 + length_of_element:]
+        length_of_element, variables_byte = decode_element_header(
+            elements_byte, byte_ordering
+        )
+        elements_byte = elements_byte[4 + length_of_element :]
 
         index = 0
         while len(variables_byte) != 0:
@@ -338,7 +357,7 @@ def decode_query(
                 variable_header, byte_ordering
             )
 
-            variable_byte = variables_byte[5: 5 + length_of_variable]
+            variable_byte = variables_byte[5 : 5 + length_of_variable]
             query[i] = set_field(
                 query[i],
                 index,
@@ -347,7 +366,7 @@ def decode_query(
                 message_type,
             )
 
-            variables_byte = variables_byte[5 + length_of_variable:]
+            variables_byte = variables_byte[5 + length_of_variable :]
             index += 1
 
     return query
@@ -355,12 +374,16 @@ def decode_query(
 
 # DecodeError Decode the error message from bytes
 def decode_error(query_response, elements_byte, byte_ordering):
-    length_of_element, variables_byte = decode_element_header(elements_byte, byte_ordering)
-    elements_byte = elements_byte[4 + length_of_element:]
+    length_of_element, variables_byte = decode_element_header(
+        elements_byte, byte_ordering
+    )
+    elements_byte = elements_byte[4 + length_of_element :]
 
     variable_header = variables_byte[:5]
-    data_type, length_of_variable = decode_variable_header(variable_header, byte_ordering)
-    variable_byte = variables_byte[5: 5 + length_of_variable]
+    data_type, length_of_variable = decode_variable_header(
+        variable_header, byte_ordering
+    )
+    variable_byte = variables_byte[5 : 5 + length_of_variable]
 
     query_response.error = to_variable(variable_byte, data_type, byte_ordering)
 
@@ -368,81 +391,85 @@ def decode_error(query_response, elements_byte, byte_ordering):
 
 
 # The unmarshal function to unmarshal the bytes into struct. Containing
-# 8 Bytes Request Header
+# 9 Bytes Request Header
 # 4 Bytes Element Header
 # 5 Bytes Variable Header
 def unmarshal(bytes_str):
     request_header = bytes_str[:9]
     (
-        byteOrdering,
+        byte_ordering,
         service_type,
         message_type,
         error_code,
-        packetLoss,
-        noOfElement,
+        packet_loss,
+        no_of_element,
     ) = decode_request_header(request_header)
 
     elements_byte = bytes_str[9:]
 
     if error_code != 0 and message_type == MessageType.REPLY:
         query_response = Response()
-        query_response = decode_error(query_response, elements_byte, byteOrdering)
-        return query_response, service_type, error_code, packetLoss
+        query_response = decode_error(query_response, elements_byte, byte_ordering)
+        return query_response, service_type, error_code, packet_loss
 
     if message_type == MessageType.REQUEST:
         query_request = []
         if service_type == ServiceType.QUERY_FLIGHT_ID:
-            query_request = [QueryFlightIdRequest() for i in range(noOfElement)]
+            query_request = [QueryFlightIdRequest() for i in range(no_of_element)]
         elif service_type == ServiceType.QUERY_DEPARTURE_TIME:
-            query_request = [QueryDepartureTimeRequest() for i in range(noOfElement)]
+            query_request = [QueryDepartureTimeRequest() for i in range(no_of_element)]
         elif service_type == ServiceType.RESERVATION:
-            query_request = [ReservationRequest() for i in range(noOfElement)]
+            query_request = [ReservationRequest() for i in range(no_of_element)]
         elif service_type == ServiceType.MONITOR:
-            query_request = [MonitorRequest() for i in range(noOfElement)]
+            query_request = [MonitorRequest() for i in range(no_of_element)]
         elif service_type == ServiceType.CHECK_RESERVATION:
-            query_request = [CheckReservationRequest() for i in range(noOfElement)]
+            query_request = [CheckReservationRequest() for i in range(no_of_element)]
         elif service_type == ServiceType.CANCELLATION:
-            query_request = [CancellationRequest() for i in range(noOfElement)]
+            query_request = [CancellationRequest() for i in range(no_of_element)]
 
         query_request = decode_query(
             query_request,
             elements_byte,
-            byteOrdering,
-            noOfElement,
+            byte_ordering,
+            no_of_element,
             service_type,
             message_type,
         )
 
-        return query_request, service_type, error_code, packetLoss
+        return query_request, service_type, error_code, packet_loss
     elif message_type == MessageType.REPLY:
         query_response = Response()
         if service_type == ServiceType.QUERY_FLIGHT_ID:
-            query_response.value = [QueryFlightIdResponse() for i in range(noOfElement)]
+            query_response.value = [
+                QueryFlightIdResponse() for i in range(no_of_element)
+            ]
         elif service_type == ServiceType.QUERY_DEPARTURE_TIME:
             query_response.value = [
-                QueryDepartureTimeResponse() for i in range(noOfElement)
+                QueryDepartureTimeResponse() for i in range(no_of_element)
             ]
         elif service_type == ServiceType.RESERVATION:
-            query_response.value = [ReservationResponse() for i in range(noOfElement)]
+            query_response.value = [ReservationResponse() for i in range(no_of_element)]
         elif service_type == ServiceType.MONITOR:
-            query_response.value = [MonitorResponse() for i in range(noOfElement)]
+            query_response.value = [MonitorResponse() for i in range(no_of_element)]
         elif service_type == ServiceType.CHECK_RESERVATION:
             query_response.value = [
-                CheckReservationResponse() for i in range(noOfElement)
+                CheckReservationResponse() for i in range(no_of_element)
             ]
         elif service_type == ServiceType.CANCELLATION:
-            query_response.value = [CancellationResponse() for i in range(noOfElement)]
+            query_response.value = [
+                CancellationResponse() for i in range(no_of_element)
+            ]
 
         query_response.value = decode_query(
             query_response.value,
             elements_byte,
-            byteOrdering,
-            noOfElement,
+            byte_ordering,
+            no_of_element,
             service_type,
             message_type,
         )
 
-        return query_response, service_type, error_code, packetLoss
+        return query_response, service_type, error_code, packet_loss
 
 
 # Marshal The marshaling function
@@ -457,7 +484,9 @@ def marshal(r, service_type, message_type, error_code, packet_loss):
         error_bytes, error_size = add_variable_header(
             DataType.STRING_TYPE, error_size, error_bytes, error_size
         )
-        error_bytes, error_size = add_element_header(error_size, error_bytes, error_size)
+        error_bytes, error_size = add_element_header(
+            error_size, error_bytes, error_size
+        )
 
         result_size += error_size
         result_bytes.extend(error_bytes)
@@ -515,6 +544,12 @@ def marshal(r, service_type, message_type, error_code, packet_loss):
             result_bytes.extend(temp_bytes)
 
     bytes, size = add_request_header(
-        service_type, message_type, error_code, packet_loss, length, result_bytes, result_size
+        service_type,
+        message_type,
+        error_code,
+        packet_loss,
+        length,
+        result_bytes,
+        result_size,
     )
     return bytes, size

@@ -452,7 +452,7 @@ func DecodeError(queryResponse Response, elementsByte []byte, byteOrdering int32
 }
 
 // Unmarshal The unmarshal function to unmarshal the bytes into struct. Containing
-// 8 Bytes Request Header
+// 9 Bytes Request Header
 // 4 Bytes Element Header per element in an array
 // 5 Bytes Variable Header per variable in an element
 func Unmarshal(bytesStr []byte) (queryRequest []interface{}, queryResponse Response, serviceType, errorCode, packetLoss int32) {

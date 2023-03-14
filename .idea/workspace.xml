@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9613168e-3105-4ad8-a41d-4a25eedaff16" name="Changes" comment="" />
+    <list default="true" id="9613168e-3105-4ad8-a41d-4a25eedaff16" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/client/utlis/utlis.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/utlis/utlis.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/utlis.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/utlis.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
