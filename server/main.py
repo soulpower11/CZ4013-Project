@@ -177,10 +177,12 @@ def search_flights(source, destination):
     flight_ids = list(map(int, selected_flights["FlightID"].values.astype(int)))
 
     if len(flight_ids) > 0:
+        # Set the list of flight ids into the response data class
         response.value = [utlis.QueryFlightIdResponse() for i in range(len(flight_ids))]
         for i in range(len(flight_ids)):
             response.value[i].flightId = flight_ids[i]
     else:
+        # Set the error message
         response = utlis.Response(
             error="No flights from " + source + " to " + destination + " was found."
         )
@@ -260,7 +262,7 @@ def reserve_seat(ip, flight_id, seat):
             reservation[ip] = {flight_id: seat}
 
         send_updates(flight_id)
-        response = utlis.Response([utlis.ReservationResponse("Seats Reversed")])
+        response = utlis.Response([utlis.ReservationResponse("Seats Reserved")])
     elif len(selected_flight) == 0:
         response = utlis.Response(error="Flight ID " + str(flight_id) + " not found.")
         error_code = 1

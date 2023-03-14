@@ -103,8 +103,8 @@ func listener() (*net.UDPConn, string, error) {
 func sendToServer(conn *net.UDPConn, bytes_ []byte, packetLoss int32) ([]byte, error) {
 	var received []byte
 	for i := 0; i < MaxRetries; i++ {
-		// Turn off the simulated packet loss byte when we retry the 4th time
-		if i == 3 {
+		// Turn off the simulated packet loss byte when we retry the 5th time
+		if i == 4 {
 			bytes_ = utlis.TurnPacketLossOff(bytes_)
 		}
 
@@ -151,8 +151,8 @@ func sendToServerAsListener(conn *net.UDPConn, bytes_ []byte, packetLoss int32) 
 	}
 
 	for i := 0; i < MaxRetries; i++ {
-		// Turn off the simulated packet loss byte when we retry the 4th time
-		if i == 3 {
+		// Turn off the simulated packet loss byte when we retry the 5th time
+		if i == 4 {
 			bytes_ = utlis.TurnPacketLossOff(bytes_)
 		}
 
