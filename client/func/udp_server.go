@@ -1,6 +1,7 @@
 package functions
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -102,6 +103,7 @@ func listener() (*net.UDPConn, string, error) {
 // sendToServer Send message to the server
 func sendToServer(conn *net.UDPConn, bytes_ []byte, packetLoss int32) ([]byte, error) {
 	var received []byte
+
 	for i := 0; i < MaxRetries; i++ {
 		// Turn off the simulated packet loss byte when we retry the 5th time
 		if i == 4 {
@@ -121,7 +123,14 @@ func sendToServer(conn *net.UDPConn, bytes_ []byte, packetLoss int32) ([]byte, e
 		// Read the response from the server
 		_, err = conn.Read(received)
 		if err == nil {
-			break
+			// Compare the requestID and the responseID
+			// First 23 bytes is the requestID or responseID
+			if bytes.Equal(bytes_[:23], received[:23]) {
+				break
+			} else {
+				log.Print("The Response ID is not the same as the Request ID")
+				continue
+			}
 		}
 
 		// Check if the error is a timeout error or other errors
@@ -169,7 +178,14 @@ func sendToServerAsListener(conn *net.UDPConn, bytes_ []byte, packetLoss int32) 
 		// Read the response from the server
 		_, _, err = conn.ReadFrom(received)
 		if err == nil {
-			break
+			// Compare the requestID and the responseID
+			// First 23 bytes is the requestID or responseID
+			if bytes.Equal(bytes_[:23], received[:23]) {
+				break
+			} else {
+				log.Print("The Response ID is not the same as the Request ID")
+				continue
+			}
 		}
 
 		// Check if the error is a timeout error or other errors

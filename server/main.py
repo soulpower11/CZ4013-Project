@@ -204,12 +204,14 @@ def get_flights_details(flight_id):
     response = utlis.Response()
     error_code = 0
 
+    # Get the flight detail for the flight id
     selected_flights = df[(df["FlightID"] == flight_id)]
     selected_flights = (
         selected_flights.reset_index()
     )  # make sure indexes pair with number of rows
 
     if len(selected_flights.index == 0):
+        # Set the row or rows into the response
         response.value = [
             utlis.QueryDepartureTimeResponse()
             for i in range(len(selected_flights.index))
@@ -222,6 +224,7 @@ def get_flights_details(flight_id):
             response.value[i].airFare = row["Airfare"]
             response.value[i].seatAvailability = row["NumSeat"]
     else:
+        # Set the error message
         response = utlis.Response(error="Flight ID " + str(flight_id) + " not found.")
         error_code = 1
 
@@ -243,15 +246,20 @@ def reserve_seat(ip, flight_id, seat):
 
     response = utlis.Response()
     error_code = 0
+    # Get the flight detail for the flight id
     selected_flight = df[(df["FlightID"] == flight_id)]
+    # Get the NumSeat column
     no_of_seats = selected_flight["NumSeat"]
 
+    # If there is only one row
     if (
         len(selected_flight) == 1
         and len(no_of_seats) == 1
         and seat <= int(no_of_seats.values[0])
     ):
+        # Minus the NumSeat in the dataframe
         df.loc[df["FlightID"] == flight_id, "NumSeat"] -= seat
+        # Save it into the reservation dictionary
         if ip in reservation:
 
             if flight_id in reservation[ip]:
@@ -262,19 +270,28 @@ def reserve_seat(ip, flight_id, seat):
             reservation[ip] = {flight_id: seat}
 
         send_updates(flight_id)
+        # Set the successful message
         response = utlis.Response([utlis.ReservationResponse("Seats Reserved")])
+    # If nothing is found
     elif len(selected_flight) == 0:
+        # Set the error message
         response = utlis.Response(error="Flight ID " + str(flight_id) + " not found.")
         error_code = 1
+    # If there is duplicated Flight ID
     elif len(selected_flight) > 1:
+        # Set the error message
         response = utlis.Response(error="Server Error. There is duplicated Flight ID")
         error_code = 1
+    # If number of seats we want to reserve is more than NumSeat
     elif seat > int(no_of_seats.values[0]):
+        # Set the error message
         response = utlis.Response(
             error="Flight ID " + str(flight_id) + " have not enough seats."
         )
         error_code = 1
+    # Something went wrong
     else:
+        # Set the error message
         response = utlis.Response(
             error="Server Error. Something is wrong with the flight information"
         )
@@ -301,11 +318,13 @@ def monitor_flight(address, flight_id, request_id, monitor_interval):
     selected_flights = df[(df["FlightID"] == flight_id)]
     selected_flights = selected_flights.reset_index()
 
+    # if the flight exist save the address and request id into the monitoring cache
     if len(selected_flights.index == 0):
         set_cache({flight_id: (address, request_id)}, monitor_interval * 60)
         response = utlis.Response(
             [utlis.MonitorResponse("Monitoring started successfully!")]
         )
+    # if the flight is not found set the error message
     else:
         response = utlis.Response(
             error="The flight ID "
@@ -330,6 +349,7 @@ def check_reservation(ip, flight_id):
     response = utlis.Response()
     error_code = 0
 
+    # if the reservation exist send a successful messge
     if ip in reservation:
         if flight_id in reservation[ip]:
             seat = reservation[ip][flight_id]
@@ -341,6 +361,7 @@ def check_reservation(ip, flight_id):
                 + " was not found."
             )
             error_code = 1
+    # if the reservation does not exist send a error message
     else:
         response = utlis.Response(
             error="Seat reservation for Flight ID " + str(flight_id) + " was not found."
@@ -366,6 +387,7 @@ def cancel_reservation(ip, flight_id):
     response = utlis.Response()
     error_code = 0
 
+    # if the reservation exist, delete the reservation send a successful messge
     if ip in reservation:
         if flight_id in reservation[ip]:
             seat = reservation[ip][flight_id]
@@ -388,6 +410,7 @@ def cancel_reservation(ip, flight_id):
                 + " was not found."
             )
             error_code = 1
+    # if the reservation does not exist send a error message
     else:
         response = utlis.Response(
             error="Seat reservation for Flight ID " + str(flight_id) + " was not found."
@@ -491,15 +514,18 @@ def at_most_once():
         request_id, ip, request, service_type, packet_loss = decode_request(data)
         if request_id == None:
             continue
+        # check if the request id is duplicated or not, if not save it into a list
         duplicated = check_duplicated_request_ids(request_id)
         print("Saved Request IDs:", requestIds)
 
         print("Duplicated Request:", bool(duplicated))
+        # if the request id not duplicated, run the function once and save the response
         if not duplicated:
             bytes_, size = services(request, service_type, address, request_id)
 
             set_response_cache(request_id, bytes_, 2 * 60)
             print("Saved Responses:", responseCache)
+        # if the request id is duplicated get the response of the cache
         else:
             bytes_ = get_response_cache(request_id)
 

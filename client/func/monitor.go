@@ -1,6 +1,7 @@
 package functions
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -68,6 +69,14 @@ func MonitorFlight(packetLoss int32) {
 		for start := time.Now(); time.Since(start) < interval; {
 			received := make([]byte, 4096)
 			_, _, err = conn.ReadFrom(received)
+			if err == nil {
+				// Compare the requestID and the responseID
+				// First 23 bytes is the requestID or responseID
+				if !bytes.Equal(bytes_[:23], received[:23]) {
+					log.Print("Got a Response not intented for this Request")
+					continue
+				}
+			}
 
 			if err != nil {
 				// If the error is the timeout error. It means the monitoring have ended
